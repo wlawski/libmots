@@ -1,0 +1,22 @@
+libmots library allows you to display additional debug information on
+the screen. It is very useful when you cannot keep active adb
+connection, e.g. while debugging application that changes USB states.
+
+You can find screenshots presenting use of 'Hello libmots' application
+inside this directory: tests/monkeyrunner-tests/reference-screenshots
+
+To start, you need to add libmots library to your project and add this
+line to your main project.properties file:
+
+	manifestmerger.enabled=true
+
+Library comes with both sample application (samples/ directory) and tests
+(tests/ directory). monkeyrunner tests use emulator which you can prepare
+running this command:
+
+	android create avd -n android-1.6 -t android-4
+
+(without creation of custom hardware profile).
+
+To run monkeyrunner tests, just start run-tests.bat from
+tests/monkeyrunner-tests directory.

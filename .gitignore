@@ -1,0 +1,10 @@
+bin
+gen
+
+.logs
+
+.settings/
+
+tests/monkeyrunner-tests/actual-screenshots/
+
+*$py.class

@@ -29,7 +29,7 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * This class is core API for this library.
+ * This class is core API for libmots library.
  */
 public class MessageOnTheScreen {
     private static MessageOnTheScreen sInstance;
@@ -40,6 +40,11 @@ public class MessageOnTheScreen {
                 SharedElementService.class));
     }
 
+    /**
+     * Returns reference to MessageOnTheScreen instance.
+     * @param activity - caller Activity.
+     * @return reference to MessageOnTheScreen instance.
+     */
     static synchronized public MessageOnTheScreen getInstance(
             Activity activity) {
         if (sInstance == null) {
@@ -47,5 +52,21 @@ public class MessageOnTheScreen {
         }
 
         return sInstance;
+    }
+
+    /**
+     * Sets new text inside debug window (replacing current content).
+     * @param activity - caller Activity.
+     * @param newText - text that should replace current content of debug
+     * window.
+     */
+    public void setText(Activity activity, String newText) {
+    	Context applicationContext = activity.getApplicationContext();
+    	Intent intent = new Intent(applicationContext,
+    	        SharedElementService.class);
+    	intent.putExtra(SharedElementService.COMMAND,
+    			SharedElementService.SET_TEXT);
+    	intent.putExtra(SharedElementService.NEW_MESSAGE, newText);
+    	applicationContext.startService(intent);
     }
 }

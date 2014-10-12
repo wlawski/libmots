@@ -51,7 +51,7 @@ def checkResult(result, currentDir, calledScript):
         prefix = prefix + "\t"
 
     try:
-        if (result.sameAs(MonkeyRunner.loadImageFromFile(referenceFile), 0.99)):
+        if (result.sameAs(MonkeyRunner.loadImageFromFile(referenceFile), 0.999)):
             print scriptName + ":" + prefix + "Passed"
         else:
             result.writeToFile(actualFile)
@@ -67,6 +67,7 @@ def setLandscape(device):
     activity = package + ".SetLandscape"
     runComponent = package + "/" + activity
     device.startActivity(component=runComponent)
+    MonkeyRunner.sleep(1)
 
 # Starts activity that sets device orientation to portrait
 def setPortrait(device):
@@ -74,3 +75,4 @@ def setPortrait(device):
     activity = package + ".SetPortrait"
     runComponent = package + "/" + activity
     device.startActivity(component=runComponent)
+    MonkeyRunner.sleep(1)

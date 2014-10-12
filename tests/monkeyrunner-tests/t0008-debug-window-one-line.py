@@ -23,8 +23,7 @@
 #
 
 #
-# This test checks that leaving application that already got reference to
-# MessageOnTheScreen object, using Back button, does not drop visual element.
+# This test checks that it is possible to set single line text in debug window.
 #
 
 import inspect
@@ -50,10 +49,13 @@ device.startActivity(component=runComponent)
 MonkeyRunner.sleep(2.5)
 device.touch(70, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
-
-# One Back button press to hide the keyboard and one to leave the application
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
+device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(0.5)
+device.type("text")
+device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
+device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(2.5)
+device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
 
 result = device.takeSnapshot().getSubImage(screenshotRect)

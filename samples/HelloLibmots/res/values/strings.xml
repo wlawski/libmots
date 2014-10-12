@@ -26,5 +26,6 @@
 
     <string name="app_name">Hello libmots</string>
     <string name="get_instance">getInstance</string>
+    <string name="set_text">setText</string>
 
 </resources>

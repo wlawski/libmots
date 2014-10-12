@@ -103,4 +103,54 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 
 		assertEquals(expected, actual);
 	}
+
+	/**
+	 * Setting null as the new text should not result in any type of exception.
+	 */
+	public void test_setText() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		mots.setText(activity, null);
+	}
+
+	/**
+	 * Setting new text as empty String should not result in any type of
+	 * exception.
+	 */
+	public void test_setText2() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		mots.setText(activity, new String());
+	}
+
+	/**
+	 * Setting new text as single line text should not result in any type of
+	 * exception.
+	 */
+	public void test_setText3() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		mots.setText(activity, "text");
+	}
+
+	/**
+	 * Setting new text as multiple line text should not result in any type of
+	 * exception.
+	 */
+	public void test_setText4() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		mots.setText(activity, "text\ntext");
+	}
+
+	/**
+	 * Setting very long new text should not result in any type of exception.
+	 */
+	public void test_setText5() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		String text = "text";
+		StringBuilder newText = new StringBuilder(10000 * text.length());
+
+		for (int i = 0; i < 10000; i++) {
+			newText.append("text");
+		}
+
+		mots.setText(activity, newText.toString());
+	}
 }

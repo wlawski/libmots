@@ -28,13 +28,14 @@ import net.wiktorlawski.messageonthescreen.MessageOnTheScreen;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 /**
  * This class presents basic use of libmots library. Each available
  * functionality for this activity represents one of this library options.
  */
 public class HelloLibmotsActivity extends Activity {
-	@SuppressWarnings("unused")
 	private MessageOnTheScreen mots;
 
 	@Override
@@ -45,5 +46,17 @@ public class HelloLibmotsActivity extends Activity {
 
 	public void getInstance(View view) {
 		mots = MessageOnTheScreen.getInstance(this);
+
+		toggleMotsControls(true);
+	}
+
+	public void setText(View view) {
+		mots.setText(this,
+			((EditText) findViewById(R.id.new_message)).getText()
+				.toString());
+	}
+
+	private void toggleMotsControls(boolean enable) {
+		((Button) findViewById(R.id.set_text)).setEnabled(enable);
 	}
 }

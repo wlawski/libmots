@@ -23,8 +23,8 @@
 #
 
 #
-# This test checks that leaving application that already got reference to
-# MessageOnTheScreen object, using Back button, does not drop visual element.
+# This test checks that debug window will show current content in multiple
+# attemps when its value is changed between shows.
 #
 
 import inspect
@@ -50,10 +50,29 @@ device.startActivity(component=runComponent)
 MonkeyRunner.sleep(2.5)
 device.touch(70, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
+device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(0.5)
+device.type("text")
+device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
 
-# One Back button press to hide the keyboard and one to leave the application
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
+device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(2.5)
+device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(2.5)
+device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(2.5)
+
+device.startActivity(component=runComponent)
+MonkeyRunner.sleep(2.5)
+
+for i in range(0, 4):
+    device.press("KEYCODE_DEL", MonkeyDevice.DOWN_AND_UP)
+
+device.type("newText")
+device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
+
+device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
+device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
 
 result = device.takeSnapshot().getSubImage(screenshotRect)

@@ -24,11 +24,16 @@
 
 package net.wiktorlawski.messageonthescreen;
 
+import java.util.ArrayList;
+
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
@@ -37,11 +42,18 @@ import android.widget.ImageView;
  * Service ensures that interactive element exists at the top of other Activity.
  */
 public class SharedElementService extends Service {
+    public static final String COMMAND = "COMMAND";
+    public static final String NEW_MESSAGE = "NEW_MESSAGE";
+
+    public static final int INCORRECT_COMMAND = 0;
+    public static final int SET_TEXT = 1;
+
     private static final int SHARED_ELEMENT_HEIGHT = 100;
     private static final int SHARED_ELEMENT_WIDTH = 100;
     private static final int SHARED_ELEMENT_PADDING_X = 25;
     private static final int SHARED_ELEMENT_PADDING_Y = 25;
 
+    private ArrayList<String> debugMessages = new ArrayList<String>();
     private ImageView sharedElement;
     private WindowManager windowManager;
 
@@ -64,6 +76,8 @@ public class SharedElementService extends Service {
         parameters.gravity = Gravity.RIGHT | Gravity.TOP;
         parameters.x = SHARED_ELEMENT_PADDING_X;
         parameters.y = SHARED_ELEMENT_PADDING_Y;
+        
+        sharedElement.setOnClickListener(new SharedElementClickedListener());
 
         windowManager.addView(sharedElement, parameters);
     }
@@ -75,5 +89,60 @@ public class SharedElementService extends Service {
         if (sharedElement != null) {
             windowManager.removeView(sharedElement);
         }
+    }
+
+    /*
+     * This is the old onStart method that will be called on the pre-2.0
+     * platform.  On 2.0 or later we override onStartCommand() so this
+     * method will not be called.
+     *
+     * Reference:
+     * http://developer.android.com/reference/android/app/Service.html
+     */
+    @Override
+    public void onStart(Intent intent, int startId) {
+    	handleCommand(intent);
+    }
+    
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+    	handleCommand(intent);
+
+    	/* Continue running until explicitly stopped. */
+    	return START_STICKY;
+    }
+
+    private void handleCommand(Intent intent) {
+    	if (intent == null) {
+            return;
+    	}
+
+    	Bundle bundle = intent.getExtras();
+
+    	if (bundle == null) {
+            return;
+    	}
+
+    	int command = bundle.getInt(COMMAND, INCORRECT_COMMAND);
+
+    	switch (command) {
+    	case SET_TEXT:
+    	    String newMessage = bundle.getString(NEW_MESSAGE);
+    	    debugMessages.clear();
+
+    	    if (newMessage != null) {
+    	        debugMessages.add(newMessage);
+    	    }
+
+    	    break;
+    	}
+    }
+
+    private class SharedElementClickedListener implements OnClickListener {
+
+    	@Override
+    	public void onClick(View v) {
+    	    new DebugWindow(getApplicationContext(), debugMessages);
+    	}
     }
 }

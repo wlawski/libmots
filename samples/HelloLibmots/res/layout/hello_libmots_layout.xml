@@ -28,9 +28,29 @@
     android:layout_width="wrap_content" >
 
     <Button
+        android:id="@+id/get_instance"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:text="@string/get_instance"
         android:onClick="getInstance" />
+
+    <EditText
+        android:freezesText="true"
+        android:id="@+id/new_message"
+        android:inputType="textMultiLine"
+        android:layout_below="@id/get_instance"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:maxLines="5"
+        android:scrollbars="vertical" />
+
+    <Button
+        android:enabled="false"
+        android:id="@+id/set_text"
+        android:layout_below="@id/new_message"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="@string/set_text"
+        android:onClick="setText" />
 
 </RelativeLayout>

@@ -42,6 +42,7 @@ SET test_script_files=0
 
 FOR /F %%f IN ('DIR /B /O:N %current_dir%\t*') DO (
 	CMD /C reinstall-packages.bat >> %logs% 2>&1
+	ECHO %%f >> .logs
 	CMD /C monkeyrunner -v ALL %current_dir%\%%f 2>> .logs
 	SET /A test_script_files+=1 >> %logs%
 )

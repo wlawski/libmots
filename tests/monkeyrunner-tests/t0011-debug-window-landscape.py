@@ -23,8 +23,8 @@
 #
 
 #
-# This test checks that leaving application that already got reference to
-# MessageOnTheScreen object, using Back button, does not drop visual element.
+# This test checks that orientation change does not cause dropping content of
+# debug window.
 #
 
 import inspect
@@ -39,7 +39,7 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
+screenshotRect = (0, 0, 440, 800)
 package = "net.wiktorlawski.hellolibmots"
 activity = package + ".HelloLibmotsActivity"
 runComponent = package + "/" + activity
@@ -50,10 +50,14 @@ device.startActivity(component=runComponent)
 MonkeyRunner.sleep(2.5)
 device.touch(70, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
-
-# One Back button press to hide the keyboard and one to leave the application
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
+device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(0.5)
+device.type("text")
+device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(0.5)
+device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+MonkeyRunner.sleep(2.5)
+helpers.setLandscape(device)
 MonkeyRunner.sleep(2.5)
 
 result = device.takeSnapshot().getSubImage(screenshotRect)

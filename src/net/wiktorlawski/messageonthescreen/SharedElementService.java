@@ -69,10 +69,10 @@ public class SharedElementService extends Service {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         sharedElement = new ImageView(this);
-        sharedElement.setImageResource(R.drawable.shared_element);
+        sharedElement.setImageResource(R.drawable.icon);
         LayoutParams parameters = new LayoutParams(SHARED_ELEMENT_WIDTH,
                 SHARED_ELEMENT_HEIGHT, LayoutParams.TYPE_PHONE,
-                LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.OPAQUE);
+                LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSPARENT);
         parameters.gravity = Gravity.RIGHT | Gravity.TOP;
         parameters.x = SHARED_ELEMENT_PADDING_X;
         parameters.y = SHARED_ELEMENT_PADDING_Y;

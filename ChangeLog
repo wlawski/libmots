@@ -1,3 +1,6 @@
+ver 0.2
+    Added optional auto-hiding for 'shared element'.
+
 ver 0.1
 	Added 'shared element'.
 	Added debug window available through 'shared element'.

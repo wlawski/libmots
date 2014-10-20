@@ -34,7 +34,7 @@ import android.content.Intent;
 public class MessageOnTheScreen {
     private static MessageOnTheScreen sInstance;
 
-    private MessageOnTheScreen(Activity activity) {
+    private MessageOnTheScreen(Activity activity, boolean startShowing) {
         Context applicationContext = activity.getApplicationContext();
         applicationContext.startService(new Intent(applicationContext,
                 SharedElementService.class));
@@ -43,13 +43,17 @@ public class MessageOnTheScreen {
     /**
      * Returns reference to MessageOnTheScreen instance.
      * @param activity - caller Activity.
+     * @param startShowing - if true, then showing of shared element will be
+     * started immediately, even when there are no debug messages.
      * @return reference to MessageOnTheScreen instance.
      */
     static synchronized public MessageOnTheScreen getInstance(
-            Activity activity) {
+            Activity activity, boolean startShowing) {
         if (sInstance == null) {
-            sInstance = new MessageOnTheScreen(activity);
+            sInstance = new MessageOnTheScreen(activity, startShowing);
         }
+
+        show(activity, startShowing);
 
         return sInstance;
     }
@@ -68,5 +72,15 @@ public class MessageOnTheScreen {
     			SharedElementService.SET_TEXT);
     	intent.putExtra(SharedElementService.NEW_MESSAGE, newText);
     	applicationContext.startService(intent);
+    }
+
+    private static void show(Activity activity, boolean startShowing) {
+        Context applicationContext = activity.getApplicationContext();
+        Intent intent = new Intent(applicationContext,
+                SharedElementService.class);
+        intent.putExtra(SharedElementService.COMMAND,
+            SharedElementService.SHOW_SHARED_ELEMENT);
+        intent.putExtra(SharedElementService.START_SHOWING, startShowing);
+        applicationContext.startService(intent);
     }
 }

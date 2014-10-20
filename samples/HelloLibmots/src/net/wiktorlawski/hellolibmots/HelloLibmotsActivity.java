@@ -29,6 +29,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 
 /**
@@ -45,7 +46,10 @@ public class HelloLibmotsActivity extends Activity {
 	}
 
 	public void getInstance(View view) {
-		mots = MessageOnTheScreen.getInstance(this);
+		boolean startShowing =
+			((CheckBox) findViewById(R.id.start_showing))
+				.isChecked();
+		mots = MessageOnTheScreen.getInstance(this, startShowing);
 
 		toggleMotsControls(true);
 	}

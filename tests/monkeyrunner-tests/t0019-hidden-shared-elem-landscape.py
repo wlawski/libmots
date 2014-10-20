@@ -23,8 +23,9 @@
 #
 
 #
-# This test checks that content of debug window will not change between shows,
-# if none of methods modifying the list is called.
+# This test checks that moving from application that already got reference to
+# MessageOnTheScreen object to application with different orientation, does not
+# add any visual element when startShowing is not ticked.
 #
 
 import inspect
@@ -39,22 +40,12 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
+screenshotRect = (0, 0, 440, 800)
 device = helpers.getDevice()
 
-helpers.createSharedElement(device, True)
+helpers.createSharedElement(device, False)
 
-device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(0.5)
-device.type("text")
-device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+helpers.setLandscape(device)
 MonkeyRunner.sleep(2.5)
 
 result = device.takeSnapshot().getSubImage(screenshotRect)

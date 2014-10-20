@@ -44,9 +44,11 @@ import android.widget.ImageView;
 public class SharedElementService extends Service {
     public static final String COMMAND = "COMMAND";
     public static final String NEW_MESSAGE = "NEW_MESSAGE";
+    public static final String START_SHOWING = "START_SHOWING";
 
     public static final int INCORRECT_COMMAND = 0;
     public static final int SET_TEXT = 1;
+    public static final int SHOW_SHARED_ELEMENT = 2;
 
     private static final int SHARED_ELEMENT_HEIGHT = 100;
     private static final int SHARED_ELEMENT_WIDTH = 100;
@@ -55,6 +57,11 @@ public class SharedElementService extends Service {
 
     private ArrayList<String> debugMessages = new ArrayList<String>();
     private ImageView sharedElement;
+    private LayoutParams sharedElementParameters;
+
+    /* If true, shared element should be always visible */
+    private boolean showing;
+    private boolean visible; /* Current visibility of shared element */
     private WindowManager windowManager;
 
     @Override
@@ -70,23 +77,21 @@ public class SharedElementService extends Service {
 
         sharedElement = new ImageView(this);
         sharedElement.setImageResource(R.drawable.icon);
-        LayoutParams parameters = new LayoutParams(SHARED_ELEMENT_WIDTH,
+        sharedElementParameters = new LayoutParams(SHARED_ELEMENT_WIDTH,
                 SHARED_ELEMENT_HEIGHT, LayoutParams.TYPE_PHONE,
                 LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSPARENT);
-        parameters.gravity = Gravity.RIGHT | Gravity.TOP;
-        parameters.x = SHARED_ELEMENT_PADDING_X;
-        parameters.y = SHARED_ELEMENT_PADDING_Y;
+        sharedElementParameters.gravity = Gravity.RIGHT | Gravity.TOP;
+        sharedElementParameters.x = SHARED_ELEMENT_PADDING_X;
+        sharedElementParameters.y = SHARED_ELEMENT_PADDING_Y;
         
         sharedElement.setOnClickListener(new SharedElementClickedListener());
-
-        windowManager.addView(sharedElement, parameters);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        if (sharedElement != null) {
+        if ((sharedElement != null) && visible) {
             windowManager.removeView(sharedElement);
         }
     }
@@ -132,10 +137,48 @@ public class SharedElementService extends Service {
 
     	    if (newMessage != null) {
     	        debugMessages.add(newMessage);
+    	        showSharedElement(showing);
+    	    } else {
+    	    	hideSharedElement(showing);
+    	    }
+
+    	    break;
+
+    	case SHOW_SHARED_ELEMENT:
+    	    boolean startShowing = bundle.getBoolean(START_SHOWING, false);
+
+    	    if (startShowing) {
+    		showSharedElement(startShowing);
+    	    } else {
+    		hideSharedElement(startShowing);
     	    }
 
     	    break;
     	}
+    }
+
+    private void hideSharedElement(boolean newShowing) {
+    	showing = newShowing;
+
+    	if ((debugMessages.isEmpty() == false) || !visible) {
+    		return;
+    	}
+
+    	windowManager.removeView(sharedElement);
+
+    	visible = false;
+    }
+
+    private void showSharedElement(boolean newShowing) {
+    	showing = newShowing;
+
+    	if (visible) {
+    		return;
+    	}
+
+    	windowManager.addView(sharedElement, sharedElementParameters);
+
+    	visible = true;
     }
 
     private class SharedElementClickedListener implements OnClickListener {

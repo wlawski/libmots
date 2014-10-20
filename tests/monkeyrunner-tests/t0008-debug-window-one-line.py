@@ -39,16 +39,10 @@ import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
 screenshotRect = (0, 35, 480, 765)
-package = "net.wiktorlawski.hellolibmots"
-activity = package + ".HelloLibmotsActivity"
-runComponent = package + "/" + activity
+device = helpers.getDevice()
 
-device = MonkeyRunner.waitForConnection(5, "emulator-5554")
+helpers.createSharedElement(device, True)
 
-device.startActivity(component=runComponent)
-MonkeyRunner.sleep(2.5)
-device.touch(70, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
 device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(0.5)
 device.type("text")

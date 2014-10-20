@@ -27,12 +27,23 @@
     android:layout_height="wrap_content"
     android:layout_width="wrap_content" >
 
+    <CheckBox
+        android:checked="false"
+        android:id="@+id/start_showing"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="@string/start_showing" />
+
     <Button
         android:id="@+id/get_instance"
+        android:layout_toRightOf="@id/start_showing"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:text="@string/get_instance"
-        android:onClick="getInstance" />
+        android:onClick="getInstance">
+
+        <requestFocus />
+    </Button>
 
     <EditText
         android:freezesText="true"

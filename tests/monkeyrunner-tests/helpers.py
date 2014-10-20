@@ -29,10 +29,11 @@
 
 import os
 
-from com.android.monkeyrunner import MonkeyRunner
+from com.android.monkeyrunner import MonkeyDevice, MonkeyRunner
 from java.lang import NullPointerException
 
 actualDir = "actual-screenshots"
+defaultEmulator = "emulator-5554"
 numberOfTabs = 5
 referenceDir = "reference-screenshots"
 tabSize = 8
@@ -45,7 +46,9 @@ def checkResult(result, currentDir, calledScript):
     referenceFile = currentDir + "/" + referenceDir + "/" + scriptName + ".png"
     actualFile = currentDir + "/" + actualDir + "/" + scriptName + ".png"
 
-    indentSize = numberOfTabs - (len(scriptName) / tabSize)
+    # 1 character is added to script name (':')
+    indentSize = numberOfTabs - ((len(scriptName) + 1) / tabSize)
+
     prefix = ""
     for i in range(0, indentSize):
         prefix = prefix + "\t"
@@ -61,13 +64,35 @@ def checkResult(result, currentDir, calledScript):
         print "Reference file (" + referenceFile + ") missing!"
         print scriptName + ":" + prefix + "Failed"
 
+# Starts 'Hello libmots' application and creates shared element using
+# 'getInstance' button
+def createSharedElement(device, showing):
+    package = "net.wiktorlawski.hellolibmots"
+    activity = package + ".HelloLibmotsActivity"
+    runComponent = package + "/" + activity
+
+    device.startActivity(component=runComponent)
+    MonkeyRunner.sleep(2.5)
+
+    # Tick checkbox, if necessary
+    if (showing):
+	device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
+
+    # Touch 'getInstance' button
+    device.touch(270, 115, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(2.5)
+
+# Returns device object
+def getDevice():
+    return MonkeyRunner.waitForConnection(10, defaultEmulator)
+
 # Starts activity that sets device orientation to landscape
 def setLandscape(device):
     package = "net.wiktorlawski.setorientation"
     activity = package + ".SetLandscape"
     runComponent = package + "/" + activity
     device.startActivity(component=runComponent)
-    MonkeyRunner.sleep(1)
+    MonkeyRunner.sleep(2)
 
 # Starts activity that sets device orientation to portrait
 def setPortrait(device):

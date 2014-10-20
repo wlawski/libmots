@@ -23,8 +23,9 @@
 #
 
 #
-# This test checks that content of debug window will not change between shows,
-# if none of methods modifying the list is called.
+# This test checks that after changing visibility of shared element from false
+# to true and re-getting reference to MessageOnTheScreen object results in
+# creation of visible element on the screen.
 #
 
 import inspect
@@ -42,19 +43,13 @@ calledScript = inspect.getfile(inspect.currentframe())
 screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
-helpers.createSharedElement(device, True)
+helpers.createSharedElement(device, False)
 
-device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(0.5)
-device.type("text")
-device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+# Tick checkbox
+device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
+
+# Touch 'getInstance' button
+device.touch(270, 110, MonkeyDevice.DOWN_AND_UP)
 MonkeyRunner.sleep(2.5)
 
 result = device.takeSnapshot().getSubImage(screenshotRect)

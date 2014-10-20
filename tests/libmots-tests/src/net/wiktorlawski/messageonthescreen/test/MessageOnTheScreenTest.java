@@ -83,12 +83,15 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 			.getDeclaredField(MOTS_INSTANCE_FIELD_NAME);
 		mots.setAccessible(true);
 		Constructor<MessageOnTheScreen> motsConstructor =
-			MessageOnTheScreen.class.getDeclaredConstructor(Activity.class);
+			MessageOnTheScreen.class.getDeclaredConstructor(Activity.class,
+					boolean.class);
 		motsConstructor.setAccessible(true);
-		MessageOnTheScreen expected = motsConstructor.newInstance(activity);
+		MessageOnTheScreen expected = motsConstructor.newInstance(activity,
+				false);
 		mots.set(null, expected);
 
-		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity,
+				false);
 
 		assertEquals(expected, actual);
 	}
@@ -98,8 +101,62 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * return reference to the same object.
 	 */
 	public void test_getInstance2() {
-		MessageOnTheScreen expected = MessageOnTheScreen.getInstance(activity);
-		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen expected = MessageOnTheScreen.getInstance(activity,
+				false);
+		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity,
+				false);
+
+		assertEquals(expected, actual);
+	}
+
+	/**
+	 * Multiple MessageOnTheScreen.getInstance() method calls should
+	 * return reference to the same object even when showing parameter is
+	 * different.
+	 */
+	public void test_getInstance3() {
+		MessageOnTheScreen expected = MessageOnTheScreen.getInstance(activity,
+				false);
+		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity,
+				true);
+
+		assertEquals(expected, actual);
+	}
+
+	/**
+	 * If MessageOnTheScreen object already exists, then
+	 * MessageOnTheScreen.getInstance() method should return reference to
+	 * this instance even when requested visibility is different.
+	 */
+	public void test_getInstance4() throws Exception {
+		Field mots =
+			MessageOnTheScreen.class
+			.getDeclaredField(MOTS_INSTANCE_FIELD_NAME);
+		mots.setAccessible(true);
+		Constructor<MessageOnTheScreen> motsConstructor =
+			MessageOnTheScreen.class.getDeclaredConstructor(Activity.class,
+					boolean.class);
+		motsConstructor.setAccessible(true);
+		MessageOnTheScreen expected = motsConstructor.newInstance(activity,
+				false);
+		mots.set(null, expected);
+
+		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity,
+				true);
+
+		assertEquals(expected, actual);
+	}
+
+	/**
+	 * Multiple MessageOnTheScreen.getInstance() method calls should
+	 * return reference to the same object even for requested visibility set to
+	 * true.
+	 */
+	public void test_getInstance5() {
+		MessageOnTheScreen expected = MessageOnTheScreen.getInstance(activity,
+				true);
+		MessageOnTheScreen actual = MessageOnTheScreen.getInstance(activity,
+				true);
 
 		assertEquals(expected, actual);
 	}
@@ -108,7 +165,8 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * Setting null as the new text should not result in any type of exception.
 	 */
 	public void test_setText() {
-		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
 		mots.setText(activity, null);
 	}
 
@@ -117,7 +175,8 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * exception.
 	 */
 	public void test_setText2() {
-		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
 		mots.setText(activity, new String());
 	}
 
@@ -126,7 +185,8 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * exception.
 	 */
 	public void test_setText3() {
-		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
 		mots.setText(activity, "text");
 	}
 
@@ -135,7 +195,8 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * exception.
 	 */
 	public void test_setText4() {
-		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
 		mots.setText(activity, "text\ntext");
 	}
 
@@ -143,7 +204,65 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	 * Setting very long new text should not result in any type of exception.
 	 */
 	public void test_setText5() {
-		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity);
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		String text = "text";
+		StringBuilder newText = new StringBuilder(10000 * text.length());
+
+		for (int i = 0; i < 10000; i++) {
+			newText.append("text");
+		}
+
+		mots.setText(activity, newText.toString());
+	}
+
+	/**
+	 * Setting null as the new text should not result in any type of exception,
+	 * even when requested visibility should be set to true.
+	 */
+	public void test_setText6() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				true);
+		mots.setText(activity, null);
+	}
+
+	/**
+	 * Setting new text as empty String should not result in any type of
+	 * exception, even when requested visibility should be set to true.
+	 */
+	public void test_setText7() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				true);
+		mots.setText(activity, new String());
+	}
+
+	/**
+	 * Setting new text as single line text should not result in any type of
+	 * exception, even when requested visibility should be set to true.
+	 */
+	public void test_setText8() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				true);
+		mots.setText(activity, "text");
+	}
+
+	/**
+	 * Setting new text as multiple line text should not result in any type of
+	 * exception, even when requested visibility should be set to true.
+	 */
+	public void test_setText9() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				true);
+		mots.setText(activity, "text\ntext");
+	}
+
+	/**
+	 * Setting very long new text should not result in any type of exception,
+	 * even when requested visibility should be set to true.
+	 */
+	public void test_setText10() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				true);
 		String text = "text";
 		StringBuilder newText = new StringBuilder(10000 * text.length());
 

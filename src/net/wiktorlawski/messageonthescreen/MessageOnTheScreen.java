@@ -59,6 +59,22 @@ public class MessageOnTheScreen {
     }
 
     /**
+     * Adds new message to the debug window.
+     * @param activity - caller Activity.
+     * @param message - text that should be added at the end of the list in the
+     * debug window.
+     */
+    public void addMessage(Activity activity, String message) {
+    	Context applicationContext = activity.getApplicationContext();
+    	Intent intent = new Intent(applicationContext,
+    			SharedElementService.class);
+    	intent.putExtra(SharedElementService.COMMAND,
+    			SharedElementService.ADD_MESSAGE);
+    	intent.putExtra(SharedElementService.NEW_MESSAGE, message);
+    	applicationContext.startService(intent);
+    }
+
+    /**
      * Sets new text inside debug window (replacing current content).
      * @param activity - caller Activity.
      * @param newText - text that should replace current content of debug

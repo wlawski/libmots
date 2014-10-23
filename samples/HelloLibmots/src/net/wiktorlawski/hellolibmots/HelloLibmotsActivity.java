@@ -54,6 +54,12 @@ public class HelloLibmotsActivity extends Activity {
 		toggleMotsControls(true);
 	}
 
+	public void addMessage(View view) {
+		mots.addMessage(this,
+			((EditText) findViewById(R.id.new_message)).getText()
+				.toString());
+	}
+
 	public void setText(View view) {
 		mots.setText(this,
 			((EditText) findViewById(R.id.new_message)).getText()
@@ -61,6 +67,7 @@ public class HelloLibmotsActivity extends Activity {
 	}
 
 	private void toggleMotsControls(boolean enable) {
+		((Button) findViewById(R.id.add_message)).setEnabled(enable);
 		((Button) findViewById(R.id.set_text)).setEnabled(enable);
 	}
 }

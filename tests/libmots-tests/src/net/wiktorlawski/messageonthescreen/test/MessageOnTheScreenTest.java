@@ -58,9 +58,12 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * By default no MessageOnTheScreen should exist.
+	 * By default no MessageOnTheScreen should exist. This test has to be run
+	 * first because there is no synchronization for setUp() and tearDown()
+	 * methods between MessageOnTheScreenTest and SharedElementServiceTest
+	 * classes.
 	 */
-	public void test_defaultNoInstance() throws Exception {
+	public void test__defaultNoInstance() throws Exception {
 		Field mots =
 			MessageOnTheScreen.class
 			.getDeclaredField(MOTS_INSTANCE_FIELD_NAME);
@@ -159,6 +162,125 @@ public class MessageOnTheScreenTest extends InstrumentationTestCase {
 				true);
 
 		assertEquals(expected, actual);
+	}
+
+	/**
+	 * Adding null as the new message should not result in any type of
+	 * exception when list of debug messages is empty.
+	 */
+	public void test_addMessage() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.addMessage(activity, null);
+	}
+
+	/**
+	 * Adding null as the new message should not result in any type of
+	 * exception when list of debug messages is not empty.
+	 */
+	public void test_addMessage2() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.setText(activity, "text");
+		mots.addMessage(activity, null);
+	}
+
+	/**
+	 * Adding empty String as the new message should not result in any type of
+	 * exception when list of debug messages is empty.
+	 */
+	public void test_addMessage3() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.addMessage(activity, new String());
+	}
+
+	/**
+	 * Adding empty String as the new message should not result in any type of
+	 * exception when list of debug messages is not empty.
+	 */
+	public void test_addMessage4() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.setText(activity, "text");
+		mots.addMessage(activity, new String());
+	}
+
+	/**
+	 * Adding new message should not result in any type of exception when list
+	 * of debug messages is empty.
+	 */
+	public void test_addMessage5() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.addMessage(activity, "text");
+	}
+
+	/**
+	 * Adding new message should not result in any type of exception when list
+	 * of debug messages is not empty.
+	 */
+	public void test_addMessage6() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.setText(activity, "text");
+		mots.addMessage(activity, "text");
+	}
+
+	/**
+	 * Adding new message as multiple line text should not result in any type of
+	 * exception when list of debug messages is empty.
+	 */
+	public void test_addMessage7() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.addMessage(activity, "text\ntext");
+	}
+
+	/**
+	 * Adding new message as multiple line text should not result in any type of
+	 * exception when list of debug messages is not empty.
+	 */
+	public void test_addMessage8() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		mots.setText(activity, "text");
+		mots.addMessage(activity, "text\ntext");
+	}
+
+	/**
+	 * Adding new messages as very long new text should not result in any type
+	 * of exception when list of debug messages is empty.
+	 */
+	public void test_addMessage9() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		String text = "text";
+		StringBuilder newText = new StringBuilder(10000 * text.length());
+
+		for (int i = 0; i < 10000; i++) {
+			newText.append("text");
+		}
+
+		mots.addMessage(activity, newText.toString());
+	}
+
+	/**
+	 * Adding new messages as very long new text should not result in any type
+	 * of exception when list of debug messages is not empty.
+	 */
+	public void test_addMessage10() {
+		MessageOnTheScreen mots = MessageOnTheScreen.getInstance(activity,
+				false);
+		String text = "text";
+		StringBuilder newText = new StringBuilder(10000 * text.length());
+
+		for (int i = 0; i < 10000; i++) {
+			newText.append("text");
+		}
+
+		mots.setText(activity, newText.toString());
+		mots.addMessage(activity, newText.toString());
 	}
 
 	/**

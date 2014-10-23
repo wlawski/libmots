@@ -1,6 +1,8 @@
 libmots library allows you to display additional debug information on
 the screen. It is very useful when you cannot keep active adb
-connection, e.g. while debugging application that changes USB states.
+connection, e.g. while debugging application that changes USB states. libmots
+library has an advantage over toasts - history is available. This can be very
+useful for longer scenarios.
 
 You can find screenshots presenting use of 'Hello libmots' application
 inside this directory: tests/monkeyrunner-tests/reference-screenshots

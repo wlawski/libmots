@@ -64,4 +64,14 @@
         android:text="@string/set_text"
         android:onClick="setText" />
 
+    <Button
+        android:enabled="false"
+        android:id="@+id/add_message"
+        android:layout_below="@id/new_message"
+        android:layout_toRightOf="@id/set_text"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="@string/add_message"
+        android:onClick="addMessage" />
+
 </RelativeLayout>

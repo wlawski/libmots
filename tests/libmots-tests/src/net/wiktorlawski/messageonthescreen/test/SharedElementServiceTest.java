@@ -58,9 +58,18 @@ public class SharedElementServiceTest
 
 	public static final int COMMAND_SET_TEXT = 1;
 	public static final int COMMAND_SHOW_SHARED_ELEMENT = 2;
+	public static final int COMMAND_ADD_MESSAGE = 3;
 
 	public SharedElementServiceTest() {
 		super(SharedElementService.class);
+	}
+
+	private void sendAddMessage(String message) {
+		Intent intent = new Intent();
+		intent.setClass(getContext(), SharedElementService.class);
+		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
+		intent.putExtra(NEW_MESSAGE_KEY, message);
+		startService(intent);
 	}
 
 	private void sendStartShowing(boolean startShowing) {
@@ -502,6 +511,334 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, 1000);
 		startService(intent);
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should prepare empty debugMessages list for ADD_MESSAGE command
+	 * when intent does not deliver any text value and service has not existed
+	 * before (by default shared element should not be visible).
+	 */
+	public void test_onStartCommand_ADD_MESSAGE() throws Exception {
+		Intent intent = new Intent();
+		intent.setClass(getContext(), SharedElementService.class);
+		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
+		startService(intent);
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(false, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should keep gathered debugMessages list for ADD_MESSAGE command
+	 * when intent does not deliver new message value and service already
+	 * contains at least one debug message.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE2() throws Exception {
+		String expected = "text";
+
+		sendSetText(expected);
+
+		Intent intent = new Intent();
+		intent.setClass(getContext(), SharedElementService.class);
+		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
+		startService(intent);
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should keep gathered debugMessages list for ADD_MESSAGE when
+	 * intent delivers null as new text value (by default shared element should
+	 * not be visible for empty debugMessages list).
+	 */
+	public void test_onStartCommand_ADD_MESSAGE3() throws Exception {
+		Intent intent = new Intent();
+		intent.setClass(getContext(), SharedElementService.class);
+		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
+		intent.putExtra(NEW_MESSAGE_KEY, (String) null);
+		startService(intent);
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(false, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should keep gathered debugMessages list for ADD_MESSAGE when
+	 * intent delivers null as new text value (shared element should be visible
+	 * for non-empty debugMessages list).
+	 */
+	public void test_onStartCommand_ADD_MESSAGE4() throws Exception {
+		String expected = "text";
+
+		sendSetText(expected);
+
+		Intent intent = new Intent();
+		intent.setClass(getContext(), SharedElementService.class);
+		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
+		intent.putExtra(NEW_MESSAGE_KEY, (String) null);
+		startService(intent);
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * When debugMessages list is empty and service receives ADD_MESSAGE command
+	 * with any new non-null message value, debugMessages should contain only
+	 * this new message value and shared element should be visible.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE5() throws Exception {
+		String expected = "text";
+
+		sendAddMessage(expected);
+
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * When debugMessages list is not empty and service receives ADD_MESSAGE
+	 * command with any new non-null text value, debugMessages should keep
+	 * already gathered messages and add this new message as last. Shared
+	 * element should be visible.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE6() throws Exception {
+		String expected1 = "text1";
+		String expected2 = "text2";
+
+		sendSetText(expected1);
+		sendAddMessage(expected2);
+
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(2, debugMessages.size());
+		assertEquals(expected1, debugMessages.get(0));
+		assertEquals(expected2, debugMessages.get(1));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should accept empty strings as new messages provided for
+	 * ADD_MESSAGE command and shared element should be visible.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE7() throws Exception {
+		String expected = new String();
+
+		sendAddMessage(expected);
+
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should accept strings that contains multiple lines as new
+	 * messages provided for ADD_MESSAGE command. Shared element should be
+	 * visible after adding such new message.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE8() throws Exception {
+		String expected = "text\ntext";
+
+		sendAddMessage(expected);
+
+		SharedElementService service = getService();
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		assertEquals(1, debugMessages.size());
+		assertEquals(expected, debugMessages.get(0));
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * Service should accept very long strings as new messages provided for
+	 * ADD_MESSAGE command. Shared element should be visible after adding such
+	 * message.
+	 */
+	public void test_onStartCommand_ADD_MESSAGE9() throws Exception {
+		String text = "text";
+		StringBuilder newText = new StringBuilder(10000 * text.length());
+
+		for (int i = 0; i < 10000; i++) {
+			newText.append("text");
+		}
+
+		String expected = newText.toString();
+
+		sendAddMessage(expected);
+
 		SharedElementService service = getService();
 
 		Field debugMessagesField =

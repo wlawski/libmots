@@ -49,6 +49,7 @@ public class SharedElementService extends Service {
     public static final int INCORRECT_COMMAND = 0;
     public static final int SET_TEXT = 1;
     public static final int SHOW_SHARED_ELEMENT = 2;
+    public static final int ADD_MESSAGE = 3;
 
     private static final int SHARED_ELEMENT_HEIGHT = 100;
     private static final int SHARED_ELEMENT_WIDTH = 100;
@@ -129,12 +130,15 @@ public class SharedElementService extends Service {
     	}
 
     	int command = bundle.getInt(COMMAND, INCORRECT_COMMAND);
+    	String newMessage = bundle.getString(NEW_MESSAGE);
+    	boolean startShowing = bundle.getBoolean(START_SHOWING, false);
 
     	switch (command) {
     	case SET_TEXT:
-    	    String newMessage = bundle.getString(NEW_MESSAGE);
     	    debugMessages.clear();
+    	    /* No break */
 
+    	case ADD_MESSAGE:
     	    if (newMessage != null) {
     	        debugMessages.add(newMessage);
     	        showSharedElement(showing);
@@ -145,12 +149,10 @@ public class SharedElementService extends Service {
     	    break;
 
     	case SHOW_SHARED_ELEMENT:
-    	    boolean startShowing = bundle.getBoolean(START_SHOWING, false);
-
     	    if (startShowing) {
-    		showSharedElement(startShowing);
+    	    	showSharedElement(startShowing);
     	    } else {
-    		hideSharedElement(startShowing);
+    	    	hideSharedElement(startShowing);
     	    }
 
     	    break;

@@ -37,9 +37,12 @@ import android.widget.ArrayAdapter;
  * This class prepares dialog that presents gathered debug messages.
  */
 /* package */ class DebugWindow {
+	SharedElementService service;
 
 	/* package */ DebugWindow(Context context,
-			ArrayList<String> debugMessages) {
+			ArrayList<String> debugMessages, SharedElementService service) {
+		this.service = service;
+
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		ArrayAdapter<String> adapter =
 				new ArrayAdapter<String>(context, R.layout.debug_message);
@@ -51,6 +54,8 @@ import android.widget.ArrayAdapter;
 		builder.setAdapter(adapter, new DebugMessageClickListener());
 		builder.setNegativeButton(R.string.cancel,
 				new DebugWindowCancelListener());
+		builder.setNeutralButton(R.string.clear,
+				new DebugWindowClearListener());
 
 		AlertDialog dialog = builder.create();
 		dialog.getWindow()
@@ -66,6 +71,14 @@ import android.widget.ArrayAdapter;
 			dialog.dismiss();
 		}
 	}	
+
+	private class DebugWindowClearListener implements OnClickListener {
+
+		@Override
+		public void onClick(DialogInterface dialog, int which) {
+			service.clearDebugMessages();
+		}
+	}
 
 	private class DebugMessageClickListener implements OnClickListener {
 

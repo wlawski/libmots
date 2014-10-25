@@ -134,7 +134,12 @@ def touchAddMessage(device):
 
 # Touches "Cancel" button in debug window
 def touchCancel(device):
-    device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
+    device.touch(350, 485, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(waitTime)
+
+# Touches "Clear" button in debug window
+def touchClear(device):
+    device.touch(130, 485, MonkeyDevice.DOWN_AND_UP)
     MonkeyRunner.sleep(waitTime)
 
 # Touches "getInstance" button

@@ -159,6 +159,14 @@ public class SharedElementService extends Service {
     	}
     }
 
+    /* package */ void clearDebugMessages() {
+    	debugMessages.clear();
+
+    	if (!showing) {
+    		hideSharedElement(showing);
+    	}
+    }
+
     private void hideSharedElement(boolean newShowing) {
     	showing = newShowing;
 
@@ -187,7 +195,8 @@ public class SharedElementService extends Service {
 
     	@Override
     	public void onClick(View v) {
-    	    new DebugWindow(getApplicationContext(), debugMessages);
+    	    new DebugWindow(getApplicationContext(), debugMessages,
+    	    		SharedElementService.this);
     	}
     }
 }

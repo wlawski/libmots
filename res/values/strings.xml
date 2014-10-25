@@ -27,5 +27,6 @@
 
     <string name="app_name">Message On The Screen library</string>
     <string name="cancel">Cancel</string>
+    <string name="clear">Clear</string>
 
 </resources>

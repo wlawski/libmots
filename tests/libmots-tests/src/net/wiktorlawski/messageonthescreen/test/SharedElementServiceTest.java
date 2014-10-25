@@ -25,6 +25,7 @@
 package net.wiktorlawski.messageonthescreen.test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import net.wiktorlawski.messageonthescreen.SharedElementService;
@@ -50,6 +51,9 @@ public class SharedElementServiceTest
 	private static final String SHOWING_FIELD_NAME = "showing";
 	private static final String VISIBLE_FIELD_NAME = "visible";
 	private static final String WINDOW_MANAGER_FIELD_NAME = "windowManager";
+
+	private static final String CLEAR_DEBUG_MESSAGES_METHOD_NAME =
+			"clearDebugMessages";
 
 	private static final int SHARED_ELEMENT_HEIGHT = 100;
 	private static final int SHARED_ELEMENT_WIDTH = 100;
@@ -1339,6 +1343,241 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
 		showingField.setAccessible(true);
 		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing empty list, it should be still empty (by default shared
+	 * element should not be visible).
+	 */
+	public void test_clearDebugMessages() throws Exception {
+		Context context = getContext();
+		Intent intent = new Intent();
+		intent.setClass(context, SharedElementService.class);
+		startService(intent);
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(false, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing empty list, it should be still empty. Shared element
+	 * should be visible when requested.
+	 */
+	public void test_clearDebugMessages2() throws Exception {
+		sendStartShowing(true);
+
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(true, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing list that contains one debug message, it should be empty
+	 * (by default shared element should hide itself).
+	 */
+	public void test_clearDebugMessages3() throws Exception {
+		sendSetText("text");
+
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(false, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing list that contains one debug message, it should be empty.
+	 * Shared element should not hide itself when requested to be visible.
+	 */
+	public void test_clearDebugMessages4() throws Exception {
+		sendStartShowing(true);
+		sendSetText("text");
+
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(true, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(true, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing list that contains multiple debug messages, it should be
+	 * empty (by default shared element should hide itself).
+	 */
+	public void test_clearDebugMessages5() throws Exception {
+		sendSetText("text");
+		sendAddMessage("text");
+
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(false, showingField.getBoolean(service));
+
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+		assertEquals(false, visibleField.getBoolean(service));
+	}
+
+	/**
+	 * After clearing list that contains multiple debug messages, it should be
+	 * empty. Shared element should not hide itself when requested to be
+	 * visible.
+	 */
+	public void test_clearDebugMessages6() throws Exception {
+		sendStartShowing(true);
+		sendSetText("text");
+		sendAddMessage("text");
+
+		SharedElementService service = getService();
+
+		Method clearDebugMessagesMethod =
+				service.getClass()
+				.getDeclaredMethod(CLEAR_DEBUG_MESSAGES_METHOD_NAME);
+		clearDebugMessagesMethod.setAccessible(true);
+		clearDebugMessagesMethod.invoke(service);
+
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		ArrayList<String> debugMessages =
+				(ArrayList<String>) debugMessagesField.get(service);
+
+		if (debugMessages.isEmpty() == false) {
+			fail("List of debug messages is not empty");
+		}
+
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+		assertEquals(true, showingField.getBoolean(service));
 
 		Field visibleField =
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);

@@ -40,17 +40,11 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, False)
+helpers.toggleStartShowing(device)
+helpers.touchGetInstance(device)
 
-# Tick checkbox
-device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
-
-# Touch 'getInstance' button
-device.touch(270, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

@@ -39,23 +39,17 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, True)
-
-device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(0.5)
+helpers.touchNewMessageEditText(device)
 device.type("text")
 
 for i in range(0, 3):
-    device.touch(185, 255, MonkeyDevice.DOWN_AND_UP)
-    MonkeyRunner.sleep(0.1)
+    helpers.touchAddMessage(device)
 
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(3.0)
+helpers.pressHome(device)
+helpers.touchSharedElement(device)
 
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

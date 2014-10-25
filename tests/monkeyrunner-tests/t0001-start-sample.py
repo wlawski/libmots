@@ -39,15 +39,9 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
-package = 'net.wiktorlawski.hellolibmots'
-activity = package + '.HelloLibmotsActivity'
-runComponent = package + '/' + activity
+device = helpers.getDevice()
 
-device = MonkeyRunner.waitForConnection(5, "emulator-5554")
+helpers.startHelloLibmots(device)
 
-device.startActivity(component=runComponent)
-MonkeyRunner.sleep(2.5)
-
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

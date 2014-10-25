@@ -39,10 +39,9 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, True)
 
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

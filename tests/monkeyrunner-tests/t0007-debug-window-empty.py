@@ -39,15 +39,11 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, True)
+helpers.pressHome(device)
+helpers.touchSharedElement(device)
 
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

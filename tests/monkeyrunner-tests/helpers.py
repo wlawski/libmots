@@ -34,9 +34,19 @@ from java.lang import NullPointerException
 
 actualDir = "actual-screenshots"
 defaultEmulator = "emulator-5554"
+landscapeRect = (0, 0, 440, 800)
 numberOfTabs = 5
+portraitRect = (0, 35, 480, 765)
 referenceDir = "reference-screenshots"
 tabSize = 8
+
+package = "net.wiktorlawski.hellolibmots"
+activity = package + ".HelloLibmotsActivity"
+runComponent = package + "/" + activity
+
+shortWaitTime = 0.5
+waitTime = 2.5
+longWaitTime = 4.5
 
 # Compares actual screenshot with the reference one and based on that prints
 # result of test from the script that called this function.
@@ -65,14 +75,10 @@ def checkResult(result, currentDir, calledScript):
         print scriptName + ":" + prefix + "Failed"
 
 # Starts 'Hello libmots' application and creates shared element using
-# 'getInstance' button
+# "getInstance" button
 def createSharedElement(device, showing):
-    package = "net.wiktorlawski.hellolibmots"
-    activity = package + ".HelloLibmotsActivity"
-    runComponent = package + "/" + activity
-
     device.startActivity(component=runComponent)
-    MonkeyRunner.sleep(2.5)
+    MonkeyRunner.sleep(waitTime)
 
     # Tick checkbox, if necessary
     if (showing):
@@ -80,11 +86,21 @@ def createSharedElement(device, showing):
 
     # Touch 'getInstance' button
     device.touch(270, 115, MonkeyDevice.DOWN_AND_UP)
-    MonkeyRunner.sleep(2.5)
+    MonkeyRunner.sleep(waitTime)
 
 # Returns device object
 def getDevice():
     return MonkeyRunner.waitForConnection(10, defaultEmulator)
+
+# Presses Back button
+def pressBack(device):
+    device.press("KEYCODE_BACK", MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(waitTime)
+
+# Presses Home button
+def pressHome(device):
+    device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(waitTime)
 
 # Starts activity that sets device orientation to landscape
 def setLandscape(device):
@@ -92,7 +108,7 @@ def setLandscape(device):
     activity = package + ".SetLandscape"
     runComponent = package + "/" + activity
     device.startActivity(component=runComponent)
-    MonkeyRunner.sleep(2)
+    MonkeyRunner.sleep(longWaitTime)
 
 # Starts activity that sets device orientation to portrait
 def setPortrait(device):
@@ -100,4 +116,43 @@ def setPortrait(device):
     activity = package + ".SetPortrait"
     runComponent = package + "/" + activity
     device.startActivity(component=runComponent)
-    MonkeyRunner.sleep(1)
+    MonkeyRunner.sleep(longWaitTime)
+
+# Starts 'Hello libmots' application
+def startHelloLibmots(device):
+    device.startActivity(component=runComponent)
+    MonkeyRunner.sleep(waitTime)
+
+# Toggles "startShowing" checkbox
+def toggleStartShowing(device):
+    device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
+
+# Touches "addMessage" button
+def touchAddMessage(device):
+    device.touch(185, 255, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(shortWaitTime)
+
+# Touches "Cancel" button in debug window
+def touchCancel(device):
+    device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(waitTime)
+
+# Touches "getInstance" button
+def touchGetInstance(device):
+    device.touch(270, 115, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(waitTime)
+
+# Touches new message edit text
+def touchNewMessageEditText(device):
+    device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(shortWaitTime)
+
+# Touches "setText" button
+def touchSetText(device):
+    device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(shortWaitTime)
+
+# Touches shared element
+def touchSharedElement(device):
+    device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+    MonkeyRunner.sleep(longWaitTime)

@@ -39,13 +39,11 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
-
-device = MonkeyRunner.waitForConnection(5, "emulator-5554")
+device = helpers.getDevice()
 
 # Unlock the screen, if necessary (run only for this test)
 device.press("KEYCODE_MENU", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
+MonkeyRunner.sleep(helpers.waitTime)
 
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

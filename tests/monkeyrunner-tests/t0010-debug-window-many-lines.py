@@ -39,13 +39,10 @@ sys.path.insert(0, currentDir)
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, True)
-
-device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(0.5)
+helpers.touchNewMessageEditText(device)
 
 for i in range(0, 100):
     device.type("text")
@@ -54,11 +51,11 @@ for i in range(0, 100):
     device.type(line)
     device.press("KEYCODE_ENTER", MonkeyDevice.DOWN_AND_UP)
 
+# Touch moved "setText" button
 device.touch(50, 405, MonkeyDevice.DOWN_AND_UP)
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
 
-result = device.takeSnapshot().getSubImage(screenshotRect)
+helpers.pressHome(device)
+helpers.touchSharedElement(device)
+
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

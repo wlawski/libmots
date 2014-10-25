@@ -35,42 +35,28 @@ from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 
 currentDir = os.environ["LIBMOTS_TEST_DIR"]
 sys.path.insert(0, currentDir)
-package = "net.wiktorlawski.hellolibmots"
-activity = package + ".HelloLibmotsActivity"
-runComponent = package + "/" + activity
 
 import helpers
 
 calledScript = inspect.getfile(inspect.currentframe())
-screenshotRect = (0, 35, 480, 765)
 device = helpers.getDevice()
 
 helpers.createSharedElement(device, True)
-
-device.touch(25, 215, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(0.5)
+helpers.touchNewMessageEditText(device)
 device.type("text")
-device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
-
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-device.touch(240, 485, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-
-device.startActivity(component=runComponent)
-MonkeyRunner.sleep(2.5)
+helpers.touchSetText(device)
+helpers.pressHome(device)
+helpers.touchSharedElement(device)
+helpers.touchCancel(device)
+helpers.startHelloLibmots(device)
 
 for i in range(0, 4):
     device.press("KEYCODE_DEL", MonkeyDevice.DOWN_AND_UP)
 
 device.type("newText")
-device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
+helpers.touchSetText(device)
+helpers.pressHome(device)
+helpers.touchSharedElement(device)
 
-device.press("KEYCODE_HOME", MonkeyDevice.DOWN_AND_UP)
-device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
-MonkeyRunner.sleep(2.5)
-
-result = device.takeSnapshot().getSubImage(screenshotRect)
+result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

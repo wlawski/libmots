@@ -29,6 +29,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import net.wiktorlawski.messageonthescreen.SharedElementService;
+import net.wiktorlawski.messageonthescreen.test.mocks.SharedElementServiceMockContext;
+import net.wiktorlawski.messageonthescreen.test.mocks.WindowManagerMock;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -66,6 +68,11 @@ public class SharedElementServiceTest
 
 	public SharedElementServiceTest() {
 		super(SharedElementService.class);
+	}
+
+	@Override
+	protected void setUp() {
+		setContext(new SharedElementServiceMockContext());
 	}
 
 	private void sendAddMessage(String message) {
@@ -160,6 +167,7 @@ public class SharedElementServiceTest
 		WindowManager windowManager =
 				(WindowManager) WindowManagerField.get(service);
 		assertNotNull(windowManager);
+		assertEquals(WindowManagerMock.getInstance(), windowManager);
 	}
 
 	/**

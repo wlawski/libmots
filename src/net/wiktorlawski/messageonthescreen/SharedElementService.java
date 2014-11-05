@@ -27,13 +27,15 @@ package net.wiktorlawski.messageonthescreen;
 import java.util.ArrayList;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.Display;
 import android.view.Gravity;
-import android.view.View;
-import android.view.View.OnClickListener;
+import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
@@ -57,7 +59,8 @@ public class SharedElementService extends Service {
     private static final int SHARED_ELEMENT_PADDING_Y = 25;
 
     private ArrayList<String> debugMessages = new ArrayList<String>();
-    private ImageView sharedElement;
+    private OrientationListener orientationListener;
+    private SharedElementView sharedElement;
     private LayoutParams sharedElementParameters;
 
     /* If true, shared element should be always visible */
@@ -70,22 +73,26 @@ public class SharedElementService extends Service {
         return null;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onCreate() {
         super.onCreate();
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        sharedElement = new ImageView(this);
+        sharedElement = new SharedElementView(this);
         sharedElement.setImageResource(R.drawable.icon);
         sharedElementParameters = new LayoutParams(SHARED_ELEMENT_WIDTH,
                 SHARED_ELEMENT_HEIGHT, LayoutParams.TYPE_PHONE,
                 LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSPARENT);
-        sharedElementParameters.gravity = Gravity.RIGHT | Gravity.TOP;
-        sharedElementParameters.x = SHARED_ELEMENT_PADDING_X;
+        sharedElementParameters.gravity = Gravity.LEFT | Gravity.TOP;
+        sharedElementParameters.x =
+                windowManager.getDefaultDisplay().getWidth() -
+                SHARED_ELEMENT_WIDTH - SHARED_ELEMENT_PADDING_X;
         sharedElementParameters.y = SHARED_ELEMENT_PADDING_Y;
-        
-        sharedElement.setOnClickListener(new SharedElementClickedListener());
+
+        orientationListener = new OrientationListener();
+        orientationListener.enable();
     }
 
     @Override
@@ -191,12 +198,118 @@ public class SharedElementService extends Service {
     	visible = true;
     }
 
-    private class SharedElementClickedListener implements OnClickListener {
+    private class OrientationListener extends OrientationEventListener {
+        private boolean previouslyPortrait;
 
-    	@Override
-    	public void onClick(View v) {
-    	    new DebugWindow(getApplicationContext(), debugMessages,
-    	    		SharedElementService.this);
-    	}
+        public OrientationListener() {
+            super(getApplicationContext());
+
+            previouslyPortrait = isPortrait();
+        }
+
+        @SuppressWarnings("deprecation")
+        private void adaptToOrientationChange() {
+            Display display = windowManager.getDefaultDisplay();
+            float previousWidth = display.getHeight();
+            float previousHeight = display.getWidth();
+            float width = display.getWidth();
+            float height = display.getHeight();
+            float scaleWidth = width / previousWidth;
+            float scaleHeight = height / previousHeight;
+
+            sharedElementParameters.x *= scaleWidth;
+            sharedElementParameters.y *= scaleHeight;
+            windowManager.updateViewLayout(sharedElement,
+                    sharedElementParameters);
+        }
+
+        @SuppressWarnings("deprecation")
+        private boolean isPortrait() {
+            if (windowManager.getDefaultDisplay().getWidth() <
+                    windowManager.getDefaultDisplay().getHeight()) {
+                return true;
+            }
+
+            return false;
+        }
+
+        @Override
+        public void onOrientationChanged(int orientation) {
+            if (orientation == ORIENTATION_UNKNOWN) {
+                return;
+            }
+
+            if (isPortrait()) {
+                if (!previouslyPortrait) {
+                    adaptToOrientationChange();
+                    previouslyPortrait = true;
+                }
+            } else {
+                if (previouslyPortrait) {
+                    adaptToOrientationChange();
+                    previouslyPortrait = false;
+                }
+            }
+        }
+    }
+
+    private class SharedElementView extends ImageView {
+        private static final float TOUCH_ERROR_MARGIN = 7.5f;
+
+        private float initialTouchX;
+        private float initialTouchY;
+        private float lastTouchX = -1;
+        private float lastTouchY = -1;
+
+        public SharedElementView(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent ev) {
+            switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                initialTouchX = lastTouchX = ev.getRawX();
+                initialTouchY = lastTouchY = ev.getRawY();
+
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                final float x = ev.getRawX();
+                final float y = ev.getRawY();
+
+                /*
+                 * Do not move shared element without previous ACTION_DOWN or
+                 * ACTION_UP.
+                 */
+                if ((lastTouchX != -1) && (lastTouchY != -1)) {
+                    sharedElementParameters.x += (int) (x - lastTouchX);
+                    sharedElementParameters.y += (int) (y - lastTouchY);
+                    windowManager.updateViewLayout(sharedElement,
+                        sharedElementParameters);
+                }
+
+                lastTouchX = x;
+                lastTouchY = y;
+
+                break;
+
+            case MotionEvent.ACTION_UP:
+                if ((initialTouchX >= ev.getRawX() - TOUCH_ERROR_MARGIN) &&
+                        (initialTouchX <= ev.getRawX() + TOUCH_ERROR_MARGIN) &&
+                        (initialTouchY >= ev.getRawY() - TOUCH_ERROR_MARGIN) &&
+                        (initialTouchY <= ev.getRawY() + TOUCH_ERROR_MARGIN)) {
+                    new DebugWindow(getApplicationContext(), debugMessages,
+                        SharedElementService.this);
+                }
+
+                initialTouchX = lastTouchX = ev.getRawX();
+                initialTouchY = lastTouchY = ev.getRawY();
+
+                break;
+            }
+
+            return true;
+        }
     }
 }

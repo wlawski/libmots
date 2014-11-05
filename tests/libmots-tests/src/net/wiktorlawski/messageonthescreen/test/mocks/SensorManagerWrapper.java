@@ -24,51 +24,42 @@
 
 package net.wiktorlawski.messageonthescreen.test.mocks;
 
+import java.lang.reflect.Constructor;
+
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.res.Resources;
-import android.test.mock.MockContext;
+import android.hardware.SensorManager;
+import android.os.Looper;
 
-public class SharedElementServiceMockContext extends MockContext {
-    private SharedElementServiceMockApplication application;
+public class SensorManagerWrapper {
+    private static SensorManagerWrapper instance;
 
-    public SharedElementServiceMockContext() {
-        application = SharedElementServiceMockApplication.getInstance(this);
+    private Object systemSensorManagerInstance;
+    private SharedElementServiceMockContext context;
+
+    private SensorManagerWrapper(SharedElementServiceMockContext context)
+            throws Exception {
+        this.context = context;
+
+        Class<?> systemSensorManager =
+            Class.forName("android.hardware.SystemSensorManager");
+        Constructor<?> systemSensorManagerConstructor =
+            systemSensorManager.getDeclaredConstructor(Context.class,
+                    Looper.class);
+        systemSensorManagerInstance =
+            systemSensorManagerConstructor.newInstance(this.context,
+                    Looper.getMainLooper());
     }
 
-    @Override
-    public Context getApplicationContext() {
-        return application;
-    }
-
-    @Override
-    public ApplicationInfo getApplicationInfo() {
-        return new ApplicationInfo();
-    }
-
-    @Override
-    public String getPackageName() {
-        return "net.wiktorlawski.messageonthescreen";
-    }
-
-    @Override
-    public Resources getResources() {
-        return new SharedElementServiceMockResources();
-    }
-
-    @Override
-    public Object getSystemService(String name) {
-        try {
-            if (WINDOW_SERVICE.equals(name)) {
-                return WindowManagerMock.getInstance();
-            }
-        } catch (Exception e) {
-            /*
-             * Nothing - null is returned which will hopefully cause
-             * NullPointerException and then test failure.
-             */
+    public static SensorManagerWrapper getInstance(
+            SharedElementServiceMockContext context) throws Exception {
+        if (instance == null) {
+            instance = new SensorManagerWrapper(context);
         }
 
-        return null;
+        return instance;
+    }
+
+    public SensorManager getSensorManager() {
+        return (SensorManager) systemSensorManagerInstance;
     }
 }

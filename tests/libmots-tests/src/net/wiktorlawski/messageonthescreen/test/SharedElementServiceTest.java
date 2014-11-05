@@ -34,9 +34,11 @@ import net.wiktorlawski.messageonthescreen.test.mocks.WindowManagerMock;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.test.ServiceTestCase;
 import android.view.Gravity;
-import android.view.WindowManager;
+import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
 
@@ -46,21 +48,58 @@ public class SharedElementServiceTest
 	public static final String NEW_MESSAGE_KEY = "NEW_MESSAGE";
 	public static final String START_SHOWING_KEY = "START_SHOWING";
 
+	private static final int SHARED_ELEMENT_HEIGHT = 100;
+	private static final int SHARED_ELEMENT_WIDTH = 100;
+	@SuppressWarnings("unused")
+	private static final int SHARED_ELEMENT_PADDING_X = 25;
+	private static final int SHARED_ELEMENT_PADDING_Y = 25;
+
+	/* x = 800 - (SHARED_ELEMENT_WIDTH / 2) - SHARED_ELEMENT_PADDING_X */
+	/* y = SHARED_ELEMENT_PADDING_Y + (SHARED_ELEMENT_HEIGHT / 2) */
+	private static final Position DEFAULT_LANDSCAPE_POSITION =
+			new Position(675, SHARED_ELEMENT_PADDING_Y);
+	/* x = 480 - (SHARED_ELEMENT_WIDTH / 2) - SHARED_ELEMENT_PADDING_X */
+	/* y = SHARED_ELEMENT_PADDING_Y + (SHARED_ELEMENT_HEIGHT / 2) */
+	private static final Position DEFAULT_PORTRAIT_CENTER_POSITION =
+			new Position(405, 75);
+	/* 480 - SHARED_ELEMENT_WIDTH - SHARED_ELEMENT_PADDING_X */
+	private static final Position DEFAULT_PORTRAIT_POSITION =
+			new Position(355, SHARED_ELEMENT_PADDING_Y);
+	private static final Position DEFAULT_POSITION =
+			new Position(-1, -1);
+	/*
+	 * Rescaled DEFAULT_PORTRAIT_POSITION for changed orientation
+	 * (portrait -> landscape)
+	 */
+	private static final Position DEFAULT_RESCALED_LANDSCAPE_POSITION =
+			new Position(591, 15);
+	/*
+	 * Rescaled DEFAULT_LANDSCAPE_POSITION for changed orientation
+	 * (landscape -> portrait)
+	 */
+	private static final Position DEFAULT_RESCALED_PORTRAIT_POSITION =
+			new Position(405, 41);
+
 	private static final String DEBUG_MESSAGES_FIELD_NAME = "debugMessages";
+	private static final String INITIAL_TOUCH_X_FIELD_NAME = "initialTouchX";
+	private static final String INITIAL_TOUCH_Y_FIELD_NAME = "initialTouchY";
+	private static final String LAST_TOUCH_X_FIELD_NAME = "lastTouchX";
+	private static final String LAST_TOUCH_Y_FIELD_NAME = "lastTouchY";
+	private static final String ON_TOUCH_EVENT_METHOD_NAME = "onTouchEvent";
+	private static final String ORIENTATION_LISTENER_FIELD_NAME =
+			"orientationListener";
+	private static final String PREVIOUSLY_PORTRAIT_FIELD_NAME =
+			"previouslyPortrait";
 	private static final String SHARED_ELEMENT_FIELD_NAME = "sharedElement";
 	private static final String SHARED_ELEMENT_PARAMETERS_FIELD_NAME =
 			"sharedElementParameters";
+	private static final String SHARED_ELEMENT_VIEW_FIELD_NAME =
+			"sharedElement";
 	private static final String SHOWING_FIELD_NAME = "showing";
 	private static final String VISIBLE_FIELD_NAME = "visible";
 	private static final String WINDOW_MANAGER_FIELD_NAME = "windowManager";
-
 	private static final String CLEAR_DEBUG_MESSAGES_METHOD_NAME =
 			"clearDebugMessages";
-
-	private static final int SHARED_ELEMENT_HEIGHT = 100;
-	private static final int SHARED_ELEMENT_WIDTH = 100;
-	private static final int SHARED_ELEMENT_PADDING_X = 25;
-	private static final int SHARED_ELEMENT_PADDING_Y = 25;
 
 	public static final int COMMAND_SET_TEXT = 1;
 	public static final int COMMAND_SHOW_SHARED_ELEMENT = 2;
@@ -71,8 +110,90 @@ public class SharedElementServiceTest
 	}
 
 	@Override
-	protected void setUp() {
+	protected void setUp() throws Exception {
 		setContext(new SharedElementServiceMockContext());
+		WindowManagerMock.getInstance()
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
+				WindowManagerMock.DEFAULT_DISPLAY_HEIGHT);
+	}
+
+	private float getInitialTouchX() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field initialTouchXField =
+				sharedElementView.getClass()
+				.getDeclaredField(INITIAL_TOUCH_X_FIELD_NAME);
+		initialTouchXField.setAccessible(true);
+
+		return initialTouchXField.getFloat(sharedElementView);
+	}
+
+	private float getInitialTouchY() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field initialTouchYField =
+				sharedElementView.getClass()
+				.getDeclaredField(INITIAL_TOUCH_Y_FIELD_NAME);
+		initialTouchYField.setAccessible(true);
+
+		return initialTouchYField.getFloat(sharedElementView);
+	}
+
+	private float getLastTouchX() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field lastTouchXField =
+				sharedElementView.getClass()
+				.getDeclaredField(LAST_TOUCH_X_FIELD_NAME);
+		lastTouchXField.setAccessible(true);
+
+		return lastTouchXField.getFloat(sharedElementView);
+	}
+
+	private float getLastTouchY() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field lastTouchYField =
+				sharedElementView.getClass()
+				.getDeclaredField(LAST_TOUCH_Y_FIELD_NAME);
+		lastTouchYField.setAccessible(true);
+
+		return lastTouchYField.getFloat(sharedElementView);
+	}
+
+	private OrientationEventListener getOrientationListener() throws Exception {
+		SharedElementService service = getService();
+		Field orientationListenerField =
+				service.getClass()
+				.getDeclaredField(ORIENTATION_LISTENER_FIELD_NAME);
+		orientationListenerField.setAccessible(true);
+
+		return (OrientationEventListener) orientationListenerField.get(service);
+	}
+
+	private boolean getPreviouslyPortrait() throws Exception {
+		Object orientationListener = getOrientationListener();
+		Field previouslyPortraitField =
+				orientationListener.getClass()
+				.getDeclaredField(PREVIOUSLY_PORTRAIT_FIELD_NAME);
+		previouslyPortraitField.setAccessible(true);
+
+		return previouslyPortraitField.getBoolean(orientationListener);
+	}
+
+	private Object getSharedElementView() throws Exception {
+		SharedElementService service = getService();
+		Field sharedElementViewField =
+				service.getClass()
+				.getDeclaredField(SHARED_ELEMENT_VIEW_FIELD_NAME);
+		sharedElementViewField.setAccessible(true);
+
+		return sharedElementViewField.get(service);
+	}
+
+	private WindowManagerMock getWindowManagerMock() throws Exception {
+		SharedElementService service = getService();
+		Field WindowManagerMockField =
+				service.getClass().getDeclaredField(WINDOW_MANAGER_FIELD_NAME);
+		WindowManagerMockField.setAccessible(true);
+
+		return (WindowManagerMock) WindowManagerMockField.get(service);
 	}
 
 	private void sendAddMessage(String message) {
@@ -81,6 +202,17 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
 		intent.putExtra(NEW_MESSAGE_KEY, message);
 		startService(intent);
+	}
+
+	private void sendMotionEvent(float x, float y, int action)
+			throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Method onTouchEventMethod = Class.forName("android.widget.ImageView")
+				.getMethod(ON_TOUCH_EVENT_METHOD_NAME, MotionEvent.class);
+		MotionEvent motionEvent =
+				MotionEvent.obtain(SystemClock.uptimeMillis(),
+						SystemClock.uptimeMillis(), action, x, y, 0);
+		onTouchEventMethod.invoke(sharedElementView, motionEvent);
 	}
 
 	private void sendStartShowing(boolean startShowing) {
@@ -124,6 +256,17 @@ public class SharedElementServiceTest
 			fail("List of debug messages is not empty");
 		}
 
+		/* orientationListener */
+		OrientationEventListener orientationListener = getOrientationListener();
+		assertNotNull(orientationListener);
+		Field mEnabledOrientationListenerField =
+				OrientationEventListener.class.getDeclaredField("mEnabled");
+		mEnabledOrientationListenerField.setAccessible(true);
+		boolean mEnabledOrientationListener =
+				(Boolean) mEnabledOrientationListenerField
+				.get(orientationListener);
+		assertTrue(mEnabledOrientationListener);
+
 		/* sharedElement */
 		Field sharedElementField =
 				service.getClass().getDeclaredField(SHARED_ELEMENT_FIELD_NAME);
@@ -143,10 +286,12 @@ public class SharedElementServiceTest
 		assertEquals(LayoutParams.TYPE_PHONE, sharedElementParameters.type);
 		assertEquals(LayoutParams.FLAG_NOT_FOCUSABLE,
 				sharedElementParameters.flags);
-		assertEquals(Gravity.RIGHT | Gravity.TOP,
+		assertEquals(Gravity.LEFT | Gravity.TOP,
 				sharedElementParameters.gravity);
-		assertEquals(SHARED_ELEMENT_PADDING_X, sharedElementParameters.x);
-		assertEquals(SHARED_ELEMENT_PADDING_Y, sharedElementParameters.y);
+		assertEquals((int) DEFAULT_PORTRAIT_POSITION.x,
+				sharedElementParameters.x);
+		assertEquals((int) DEFAULT_PORTRAIT_POSITION.y,
+				sharedElementParameters.y);
 
 		/* showing */
 		Field showingField =
@@ -161,13 +306,11 @@ public class SharedElementServiceTest
 		assertEquals(false, visibleField.getBoolean(service));
 
 		/* windowManager */
-		Field WindowManagerField =
-				service.getClass().getDeclaredField(WINDOW_MANAGER_FIELD_NAME);
-		WindowManagerField.setAccessible(true);
-		WindowManager windowManager =
-				(WindowManager) WindowManagerField.get(service);
-		assertNotNull(windowManager);
-		assertEquals(WindowManagerMock.getInstance(), windowManager);
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertNotNull(windowManagerMock);
+		assertEquals(WindowManagerMock.getInstance(), windowManagerMock);
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -215,6 +358,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -253,6 +400,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -288,6 +441,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -326,6 +483,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -361,6 +524,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -399,6 +566,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -434,6 +607,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -472,6 +649,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -507,6 +690,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -545,6 +732,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -580,6 +773,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -618,6 +815,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -654,6 +857,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -693,6 +900,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -727,6 +940,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -765,6 +984,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -798,6 +1023,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -832,6 +1063,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -873,6 +1110,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -908,6 +1151,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -946,6 +1193,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -985,6 +1238,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1024,6 +1283,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1063,6 +1328,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1102,6 +1373,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1137,6 +1412,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1176,6 +1455,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1216,6 +1499,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1250,6 +1537,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1283,6 +1576,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1316,6 +1615,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1356,6 +1661,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1396,6 +1707,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1434,6 +1749,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1472,6 +1793,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1511,6 +1836,12 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1550,6 +1881,10 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(false, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_POSITION.y, windowManagerMock.getViewLocation().y);
 	}
 
 	/**
@@ -1591,5 +1926,429 @@ public class SharedElementServiceTest
 				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
 		visibleField.setAccessible(true);
 		assertEquals(true, visibleField.getBoolean(service));
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * OrientationEventListener should know screen orientation when created
+	 * (default orientation is portrait).
+	 */
+	public void test_onOrientationChanged() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		sendStartShowing(true);
+
+		assertEquals(true, getPreviouslyPortrait());
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * OrientationEventListener should know screen orientation when created
+	 * for device in landscape mode.
+	 */
+	public void test_onOrientationChanged2() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+		sendStartShowing(true);
+
+		assertEquals(false, getPreviouslyPortrait());
+		assertEquals(DEFAULT_LANDSCAPE_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_LANDSCAPE_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * OrientationEventListener should ignore "orientation change" when new
+	 * orientation value equals ORIENTATION_UNKNOWN (default orientation is
+	 * portrait).
+	 */
+	public void test_onOrientationChanged3() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		sendStartShowing(true);
+
+		OrientationEventListener orientationListener = getOrientationListener();
+		orientationListener.onOrientationChanged(
+				OrientationEventListener.ORIENTATION_UNKNOWN);
+
+		assertEquals(true, getPreviouslyPortrait());
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * OrientationEventListener should move shared element after orientation
+	 * change from portrait to landscape.
+	 */
+	public void test_onOrientationChanged4() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		sendStartShowing(true);
+
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+		OrientationEventListener orientationListener = getOrientationListener();
+		orientationListener.onOrientationChanged(100);
+
+		assertEquals(false, getPreviouslyPortrait());
+		assertEquals(DEFAULT_RESCALED_LANDSCAPE_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_RESCALED_LANDSCAPE_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * OrientationEventListener should move shared element after orientation
+	 * change from landscape to portrait.
+	 */
+	public void test_onOrientationChanged5() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+		sendStartShowing(true);
+
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
+				WindowManagerMock.DEFAULT_DISPLAY_HEIGHT);
+		OrientationEventListener orientationListener = getOrientationListener();
+		orientationListener.onOrientationChanged(10);
+
+		assertEquals(true, getPreviouslyPortrait());
+		assertEquals(DEFAULT_RESCALED_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_RESCALED_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+	}
+
+	/**
+	 * Initial touch on shared element should not move it but initialize its
+	 * fields to current values.
+	 */
+	public void test_onTouchEvent() throws Exception {
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * Release of shared element without previous touch should not move shared
+	 * element but initialize its fields to current values.
+	 */
+	public void test_onTouchEvent2() throws Exception {
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_UP);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_CANCEL for shared element without previous touch
+	 * should neither move shared element nor affect its fields values.
+	 */
+	public void test_onTouchEvent3() throws Exception {
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_CANCEL);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(0.0f, getInitialTouchX());
+		assertEquals(0.0f, getInitialTouchY());
+		assertEquals(DEFAULT_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * Move event for shared element should not cause its position change
+	 * without previous touch.
+	 */
+	public void test_onTouchEvent4() throws Exception {
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(0.0f, getInitialTouchX());
+		assertEquals(0.0f, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * Sequence of MotionEvent.ACTION_DOWN events on shared element should not
+	 * move it but update its fields to current values.
+	 */
+	public void test_onTouchEvent5() throws Exception {
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_CANCEL for shared element after
+	 * MotionEvent.ACTION_DOWN event should not affect its fields values.
+	 */
+	public void test_onTouchEvent6() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_CANCEL);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_MOVE on already touched shared element should update
+	 * its position.
+	 */
+	public void test_onTouchEvent7() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+				getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
+				getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_DOWN after releasing shared element should trigger
+	 * update of its fields but do not move it.
+	 */
+	public void test_onTouchEvent8() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_UP);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_DOWN);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+				getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
+				getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+				getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
+				getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_CANCEL for shared element after MotionEvent.ACTION_UP
+	 * event should not affect its fields values.
+	 */
+	public void test_onTouchEvent9() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_UP);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_CANCEL);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_MOVE on already touched shared element should update
+	 * its position, even if previous event was MotionEvent.ACTION_UP.
+	 */
+	public void test_onTouchEvent10() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_UP);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newTouchPosition.x, getLastTouchX());
+		assertEquals(newTouchPosition.y, getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_DOWN after MotionEvent.ACTION_MOVE should trigger
+	 * update of shared element fields but do not move it.
+	 */
+	public void test_onTouchEvent11() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+		int deltaX2 = 10;
+		int deltaY2 = 10;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x - deltaX2,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_DOWN);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x - deltaX2,
+				getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2,
+				getInitialTouchY());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x - deltaX2,
+				getLastTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2,
+				getLastTouchY());
+	}
+
+	/**
+	 * MotionEvent.ACTION_UP after MotionEvent.ACTION_MOVE should trigger
+	 * update of shared element fields but do not move it further.
+	 */
+	public void test_onTouchEvent12() throws Exception {
+		int deltaX = 5;
+		int deltaY = 5;
+		int deltaX2 = 15;
+		int deltaY2 = 15;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+		Position newTouchPosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x - deltaX2,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2);
+		sendMotionEvent(newTouchPosition.x, newTouchPosition.y,
+				MotionEvent.ACTION_UP);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(newTouchPosition.x, getInitialTouchX());
+		assertEquals(newTouchPosition.y, getInitialTouchY());
+		assertEquals(newTouchPosition.x, getLastTouchX());
+		assertEquals(newTouchPosition.y, getLastTouchY());
 	}
 }

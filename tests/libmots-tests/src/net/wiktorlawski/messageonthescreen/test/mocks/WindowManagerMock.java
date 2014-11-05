@@ -28,20 +28,28 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import net.wiktorlawski.messageonthescreen.test.Position;
+
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 
 public class WindowManagerMock implements WindowManager {
-    private static final int APP_WIDTH = 480;
+    public static final int DEFAULT_DISPLAY_HEIGHT = 800;
+    public static final int DEFAULT_DISPLAY_WIDTH = 480;
 
     private static WindowManagerMock instance;
 
     private Display displayInstance;
     private View sharedElementView;
+    private Position viewPosition;
 
     private WindowManagerMock() throws Exception {
-        /* displayInstance */
+        createNewDisplay(DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT);
+    }
+
+    private void createNewDisplay(int displayWidth, int displayHeight)
+            throws Exception {
         Class<?> displayManagerGlobal =
             Class.forName("android.hardware.display.DisplayManagerGlobal");
         Method getInstance = displayManagerGlobal.getMethod("getInstance");
@@ -49,7 +57,9 @@ public class WindowManagerMock implements WindowManager {
         Object displayInfoInstance =
             displayInfo.cast(displayInfo.newInstance());
         Field displayInfoAppWidthField = displayInfo.getField("appWidth");
-        displayInfoAppWidthField.set(displayInfoInstance, APP_WIDTH);
+        displayInfoAppWidthField.set(displayInfoInstance, displayWidth);
+        Field displayInfoAppHeightField = displayInfo.getField("appHeight");
+        displayInfoAppHeightField.set(displayInfoInstance, displayHeight);
         Class<?> displayAdjustments =
             Class.forName("android.view.DisplayAdjustments");
         Class<?> display = Class.forName("android.view.Display");
@@ -76,6 +86,9 @@ public class WindowManagerMock implements WindowManager {
     public void addView(View view, android.view.ViewGroup.LayoutParams params) {
         if (sharedElementView == null) {
             sharedElementView = view;
+            android.view.WindowManager.LayoutParams layoutParams =
+                    (android.view.WindowManager.LayoutParams) params;
+            viewPosition = new Position(layoutParams.x, layoutParams.y);
         } else {
             /* Force NullPointerException - this view is already added! */
             sharedElementView = null;
@@ -87,13 +100,18 @@ public class WindowManagerMock implements WindowManager {
     public void removeView(View view) {
         if (sharedElementView.equals(view)) {
             sharedElementView = null;
+            viewPosition = null;
         }
     }
 
     @Override
     public void updateViewLayout(View view,
             android.view.ViewGroup.LayoutParams params) {
-        throw new UnsupportedOperationException();
+        if (sharedElementView.equals(view)) {
+            android.view.WindowManager.LayoutParams layoutParams =
+                    (android.view.WindowManager.LayoutParams) params;
+            viewPosition = new Position(layoutParams.x, layoutParams.y);
+        }
     }
 
     @Override
@@ -101,8 +119,21 @@ public class WindowManagerMock implements WindowManager {
         return displayInstance;
     }
 
+    public Position getViewLocation() {
+        if (sharedElementView == null) {
+            return new Position(-1, -1); /* Incorrect screen position */
+        }
+
+        return viewPosition;
+    }
+
     @Override
     public void removeViewImmediate(View view) {
         throw new UnsupportedOperationException();
+    }
+
+    public void setNewDisplay(int newDisplayWidth, int newDisplayHeight)
+            throws Exception {
+        createNewDisplay(newDisplayWidth, newDisplayHeight);
     }
 }

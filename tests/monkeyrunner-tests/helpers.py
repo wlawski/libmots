@@ -46,7 +46,10 @@ runComponent = package + "/" + activity
 
 shortWaitTime = 0.5
 waitTime = 2.5
-longWaitTime = 4.5
+longWaitTime = 6.0
+
+sharedElemX = 405
+sharedElemY = 110
 
 # Compares actual screenshot with the reference one and based on that prints
 # result of test from the script that called this function.
@@ -91,6 +94,13 @@ def createSharedElement(device, showing):
 # Returns device object
 def getDevice():
     return MonkeyRunner.waitForConnection(10, defaultEmulator)
+
+# Moves shared element
+def moveSharedElement(device, x, y, deltaX, deltaY):
+    device.touch(x, y, MonkeyDevice.DOWN)
+    device.touch(x + deltaX, y + deltaY, MonkeyDevice.MOVE)
+    device.touch(x + deltaX, y + deltaY, MonkeyDevice.UP)
+    MonkeyRunner.sleep(waitTime)
 
 # Presses Back button
 def pressBack(device):
@@ -157,7 +167,7 @@ def touchSetText(device):
     device.touch(50, 285, MonkeyDevice.DOWN_AND_UP)
     MonkeyRunner.sleep(shortWaitTime)
 
-# Touches shared element
+# Touches shared element (using default shared element position)
 def touchSharedElement(device):
-    device.touch(405, 110, MonkeyDevice.DOWN_AND_UP)
+    device.touch(sharedElemX, sharedElemY, MonkeyDevice.DOWN_AND_UP)
     MonkeyRunner.sleep(longWaitTime)

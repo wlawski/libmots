@@ -24,43 +24,32 @@
 
 package net.wiktorlawski.messageonthescreen.test.mocks;
 
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.res.Resources;
-import android.test.mock.MockContext;
+import android.test.mock.MockApplication;
 
-public class SharedElementServiceMockContext extends MockContext {
-    private SharedElementServiceMockApplication application;
+public class SharedElementServiceMockApplication extends MockApplication {
+    private static SharedElementServiceMockApplication instance;
+    private SharedElementServiceMockContext context;
 
-    public SharedElementServiceMockContext() {
-        application = SharedElementServiceMockApplication.getInstance(this);
+    private SharedElementServiceMockApplication(
+            SharedElementServiceMockContext context) {
+        this.context = context;
     }
 
-    @Override
-    public Context getApplicationContext() {
-        return application;
-    }
+    public static SharedElementServiceMockApplication getInstance(
+            SharedElementServiceMockContext context) {
+        if (instance == null) {
+            instance = new SharedElementServiceMockApplication(context);
+        }
 
-    @Override
-    public ApplicationInfo getApplicationInfo() {
-        return new ApplicationInfo();
-    }
-
-    @Override
-    public String getPackageName() {
-        return "net.wiktorlawski.messageonthescreen";
-    }
-
-    @Override
-    public Resources getResources() {
-        return new SharedElementServiceMockResources();
+        return instance;
     }
 
     @Override
     public Object getSystemService(String name) {
         try {
-            if (WINDOW_SERVICE.equals(name)) {
-                return WindowManagerMock.getInstance();
+            if (SENSOR_SERVICE.equals(name)) {
+                return SensorManagerWrapper.getInstance(context)
+                        .getSensorManager();
             }
         } catch (Exception e) {
             /*

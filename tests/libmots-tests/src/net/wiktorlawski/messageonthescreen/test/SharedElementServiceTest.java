@@ -90,7 +90,6 @@ public class SharedElementServiceTest
 			"orientationListener";
 	private static final String PREVIOUSLY_PORTRAIT_FIELD_NAME =
 			"previouslyPortrait";
-	private static final String SHARED_ELEMENT_FIELD_NAME = "sharedElement";
 	private static final String SHARED_ELEMENT_PARAMETERS_FIELD_NAME =
 			"sharedElementParameters";
 	private static final String SHARED_ELEMENT_VIEW_FIELD_NAME =
@@ -115,6 +114,16 @@ public class SharedElementServiceTest
 		WindowManagerMock.getInstance()
 		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
 				WindowManagerMock.DEFAULT_DISPLAY_HEIGHT);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ArrayList<String> getDebugMessages() throws Exception {
+		SharedElementService service = getService();
+		Field debugMessagesField =
+				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
+		debugMessagesField.setAccessible(true);
+
+		return (ArrayList<String>) debugMessagesField.get(service);
 	}
 
 	private float getInitialTouchX() throws Exception {
@@ -196,6 +205,24 @@ public class SharedElementServiceTest
 		return (WindowManagerMock) WindowManagerMockField.get(service);
 	}
 
+	private boolean isShowing() throws Exception {
+		SharedElementService service = getService();
+		Field showingField =
+				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
+		showingField.setAccessible(true);
+
+		return showingField.getBoolean(service);
+	}
+
+	private boolean isVisible() throws Exception {
+		SharedElementService service = getService();
+		Field visibleField =
+				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
+		visibleField.setAccessible(true);
+
+		return visibleField.getBoolean(service);
+	}
+
 	private void sendAddMessage(String message) {
 		Intent intent = new Intent();
 		intent.setClass(getContext(), SharedElementService.class);
@@ -232,7 +259,7 @@ public class SharedElementServiceTest
 	}
 
 	/**
-	 * This test checks default values. 
+	 * This test checks default values.
 	 */
 	public void test_onCreate() throws Exception {
 		Context context = getContext();
@@ -243,13 +270,7 @@ public class SharedElementServiceTest
 		SharedElementService service = getService();
 
 		/* debugMessages */
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertNotNull(debugMessages);
 
 		if (debugMessages.isEmpty() == false) {
@@ -268,10 +289,7 @@ public class SharedElementServiceTest
 		assertTrue(mEnabledOrientationListener);
 
 		/* sharedElement */
-		Field sharedElementField =
-				service.getClass().getDeclaredField(SHARED_ELEMENT_FIELD_NAME);
-		sharedElementField.setAccessible(true);
-		ImageView sharedElement = (ImageView) sharedElementField.get(service);
+		ImageView sharedElement = (ImageView) getSharedElementView();
 		assertNotNull(sharedElement);
 
 		/* sharedElementParameters */
@@ -294,16 +312,10 @@ public class SharedElementServiceTest
 				sharedElementParameters.y);
 
 		/* showing */
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
+		assertEquals(false, isShowing());
 
 		/* visible */
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isVisible());
 
 		/* windowManager */
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
@@ -335,29 +347,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtras(new Bundle());
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -378,28 +376,13 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtras(new Bundle());
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -418,29 +401,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra("DummyKey", 0);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -461,28 +430,14 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra("DummyKey", 0);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -501,29 +456,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, 0);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -544,28 +485,14 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, 0);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -584,29 +511,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, -1);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -627,28 +540,13 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, -1);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -667,29 +565,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, 1000);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -710,28 +594,13 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, 1000);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -750,29 +619,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -793,28 +648,13 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -834,29 +674,15 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
 		intent.putExtra(NEW_MESSAGE_KEY, (String) null);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -878,28 +704,13 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_ADD_MESSAGE);
 		intent.putExtra(NEW_MESSAGE_KEY, (String) null);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -918,28 +729,12 @@ public class SharedElementServiceTest
 
 		sendAddMessage(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -961,29 +756,13 @@ public class SharedElementServiceTest
 		sendSetText(expected1);
 		sendAddMessage(expected2);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(2, debugMessages.size());
 		assertEquals(expected1, debugMessages.get(0));
 		assertEquals(expected2, debugMessages.get(1));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1001,28 +780,12 @@ public class SharedElementServiceTest
 
 		sendAddMessage(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1041,28 +804,12 @@ public class SharedElementServiceTest
 
 		sendAddMessage(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1088,28 +835,12 @@ public class SharedElementServiceTest
 
 		sendAddMessage(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1128,29 +859,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1171,28 +888,13 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1216,28 +918,13 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		intent.putExtra(START_SHOWING_KEY, false);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1261,28 +948,13 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		intent.putExtra(START_SHOWING_KEY, true);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(true, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(true, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1305,29 +977,15 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		intent.putExtra(START_SHOWING_KEY, true);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(true, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(true, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1350,29 +1008,15 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_SHOW_SHARED_ELEMENT);
 		intent.putExtra(START_SHOWING_KEY, false);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1389,29 +1033,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_SET_TEXT);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1432,29 +1062,15 @@ public class SharedElementServiceTest
 		intent.setClass(getContext(), SharedElementService.class);
 		intent.putExtra(COMMAND_KEY, COMMAND_SET_TEXT);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1476,29 +1092,15 @@ public class SharedElementServiceTest
 		intent.putExtra(COMMAND_KEY, COMMAND_SET_TEXT);
 		intent.putExtra(NEW_MESSAGE_KEY, (String) null);
 		startService(intent);
-		SharedElementService service = getService();
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1515,28 +1117,12 @@ public class SharedElementServiceTest
 
 		sendSetText(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1554,28 +1140,12 @@ public class SharedElementServiceTest
 
 		sendSetText(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1593,28 +1163,12 @@ public class SharedElementServiceTest
 
 		sendSetText(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1639,28 +1193,12 @@ public class SharedElementServiceTest
 
 		sendSetText(expected);
 
-		SharedElementService service = getService();
-
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
-
+		ArrayList<String> debugMessages = getDebugMessages();
 		assertEquals(1, debugMessages.size());
 		assertEquals(expected, debugMessages.get(0));
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1686,27 +1224,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1728,27 +1253,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(true, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(true, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1772,27 +1284,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1815,27 +1314,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(true, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(true, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,
@@ -1860,27 +1346,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(false, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(false, visibleField.getBoolean(service));
+		assertEquals(false, isShowing());
+		assertEquals(false, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_POSITION.x, windowManagerMock.getViewLocation().x);
@@ -1905,27 +1378,14 @@ public class SharedElementServiceTest
 		clearDebugMessagesMethod.setAccessible(true);
 		clearDebugMessagesMethod.invoke(service);
 
-		Field debugMessagesField =
-				service.getClass().getDeclaredField(DEBUG_MESSAGES_FIELD_NAME);
-		debugMessagesField.setAccessible(true);
-
-		@SuppressWarnings("unchecked")
-		ArrayList<String> debugMessages =
-				(ArrayList<String>) debugMessagesField.get(service);
+		ArrayList<String> debugMessages = getDebugMessages();
 
 		if (debugMessages.isEmpty() == false) {
 			fail("List of debug messages is not empty");
 		}
 
-		Field showingField =
-				service.getClass().getDeclaredField(SHOWING_FIELD_NAME);
-		showingField.setAccessible(true);
-		assertEquals(true, showingField.getBoolean(service));
-
-		Field visibleField =
-				service.getClass().getDeclaredField(VISIBLE_FIELD_NAME);
-		visibleField.setAccessible(true);
-		assertEquals(true, visibleField.getBoolean(service));
+		assertEquals(true, isShowing());
+		assertEquals(true, isVisible());
 
 		WindowManagerMock windowManagerMock = getWindowManagerMock();
 		assertEquals(DEFAULT_PORTRAIT_POSITION.x,

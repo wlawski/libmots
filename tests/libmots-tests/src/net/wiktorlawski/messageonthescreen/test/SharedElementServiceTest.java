@@ -85,6 +85,7 @@ public class SharedElementServiceTest
 	private static final String INITIAL_TOUCH_Y_FIELD_NAME = "initialTouchY";
 	private static final String LAST_TOUCH_X_FIELD_NAME = "lastTouchX";
 	private static final String LAST_TOUCH_Y_FIELD_NAME = "lastTouchY";
+	private static final String MOVED_FIELD_NAME = "moved";
 	private static final String ON_TOUCH_EVENT_METHOD_NAME = "onTouchEvent";
 	private static final String ORIENTATION_LISTENER_FIELD_NAME =
 			"orientationListener";
@@ -203,6 +204,16 @@ public class SharedElementServiceTest
 		WindowManagerMockField.setAccessible(true);
 
 		return (WindowManagerMock) WindowManagerMockField.get(service);
+	}
+
+	private boolean isMoved() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field movedField =
+				sharedElementView.getClass()
+				.getDeclaredField(MOVED_FIELD_NAME);
+		movedField.setAccessible(true);
+
+		return movedField.getBoolean(sharedElementView);
 	}
 
 	private boolean isShowing() throws Exception {
@@ -1510,6 +1521,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1530,6 +1542,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1550,6 +1563,7 @@ public class SharedElementServiceTest
 		assertEquals(0.0f, getInitialTouchY());
 		assertEquals(DEFAULT_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1570,6 +1584,7 @@ public class SharedElementServiceTest
 		assertEquals(0.0f, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1590,6 +1605,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1618,6 +1634,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1648,6 +1665,7 @@ public class SharedElementServiceTest
 				getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
 				getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1680,6 +1698,7 @@ public class SharedElementServiceTest
 				getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
 				getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1708,6 +1727,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1736,6 +1756,7 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
 		assertEquals(newTouchPosition.x, getLastTouchX());
 		assertEquals(newTouchPosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1775,6 +1796,7 @@ public class SharedElementServiceTest
 				getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2,
 				getLastTouchY());
+		assertEquals(false, isMoved());
 	}
 
 	/**
@@ -1810,5 +1832,238 @@ public class SharedElementServiceTest
 		assertEquals(newTouchPosition.y, getInitialTouchY());
 		assertEquals(newTouchPosition.x, getLastTouchX());
 		assertEquals(newTouchPosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
+	}
+
+	/**
+	 * Moving shared element a bit to the left should not mean for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent13() throws Exception {
+		int deltaX = -7;
+		int deltaY = 0;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
+	}
+
+	/**
+	 * Moving shared element a bit to the right should not mean for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent14() throws Exception {
+		int deltaX = 7;
+		int deltaY = 0;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
+	}
+
+	/**
+	 * Moving shared element a bit to the top should not mean for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent15() throws Exception {
+		int deltaX = 0;
+		int deltaY = -7;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
+	}
+
+	/**
+	 * Moving shared element a bit to the bottom should not mean for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent16() throws Exception {
+		int deltaX = 0;
+		int deltaY = 7;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(false, isMoved());
+	}
+
+	/**
+	 * Changing shared element position significantly (left) means for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent17() throws Exception {
+		int deltaX = -8;
+		int deltaY = 0;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(true, isMoved());
+	}
+
+	/**
+	 * Changing shared element position significantly (right) means for
+	 * the final user that it is "moved".
+	 */
+	public void test_onTouchEvent18() throws Exception {
+		int deltaX = 8;
+		int deltaY = 0;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(true, isMoved());
+	}
+
+	/**
+	 * Changing shared element position significantly (top) means for the final
+	 * user that it is "moved".
+	 */
+	public void test_onTouchEvent19() throws Exception {
+		int deltaX = 0;
+		int deltaY = -8;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(true, isMoved());
+	}
+
+	/**
+	 * Changing shared element position significantly (bottom) means for
+	 * the final user that it is "moved".
+	 */
+	public void test_onTouchEvent20() throws Exception {
+		int deltaX = 0;
+		int deltaY = 8;
+
+		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		Position newMovePosition =
+				new Position(DEFAULT_PORTRAIT_CENTER_POSITION.x + deltaX,
+						DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY);
+		sendMotionEvent(newMovePosition.x, newMovePosition.y,
+				MotionEvent.ACTION_MOVE);
+
+		WindowManagerMock windowManagerMock = getWindowManagerMock();
+		assertEquals(DEFAULT_PORTRAIT_POSITION.x + deltaX,
+				windowManagerMock.getViewLocation().x);
+		assertEquals(DEFAULT_PORTRAIT_POSITION.y + deltaY,
+				windowManagerMock.getViewLocation().y);
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getInitialTouchX());
+		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getInitialTouchY());
+		assertEquals(newMovePosition.x, getLastTouchX());
+		assertEquals(newMovePosition.y, getLastTouchY());
+		assertEquals(true, isMoved());
 	}
 }

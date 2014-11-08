@@ -260,24 +260,37 @@ public class SharedElementService extends Service {
         private float initialTouchY;
         private float lastTouchX = -1;
         private float lastTouchY = -1;
+        private boolean moved;
 
         public SharedElementView(Context context) {
             super(context);
         }
 
+        private boolean isSignificantDifference(float rawX, float rawY) {
+            if ((initialTouchX >= rawX - TOUCH_ERROR_MARGIN) &&
+                    (initialTouchX <= rawX + TOUCH_ERROR_MARGIN) &&
+                    (initialTouchY >= rawY - TOUCH_ERROR_MARGIN) &&
+                    (initialTouchY <= rawY + TOUCH_ERROR_MARGIN)) {
+                return false;
+            }
+
+            return true;
+        }
+
         @Override
         public boolean onTouchEvent(MotionEvent ev) {
+            final float x = ev.getRawX();
+            final float y = ev.getRawY();
+
             switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 initialTouchX = lastTouchX = ev.getRawX();
                 initialTouchY = lastTouchY = ev.getRawY();
+                moved = false;
 
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                final float x = ev.getRawX();
-                final float y = ev.getRawY();
-
                 /*
                  * Do not move shared element without previous ACTION_DOWN or
                  * ACTION_UP.
@@ -287,6 +300,10 @@ public class SharedElementService extends Service {
                     sharedElementParameters.y += (int) (y - lastTouchY);
                     windowManager.updateViewLayout(sharedElement,
                         sharedElementParameters);
+
+                    if (isSignificantDifference(x, y)) {
+                    	moved = true;
+                    }
                 }
 
                 lastTouchX = x;
@@ -295,16 +312,14 @@ public class SharedElementService extends Service {
                 break;
 
             case MotionEvent.ACTION_UP:
-                if ((initialTouchX >= ev.getRawX() - TOUCH_ERROR_MARGIN) &&
-                        (initialTouchX <= ev.getRawX() + TOUCH_ERROR_MARGIN) &&
-                        (initialTouchY >= ev.getRawY() - TOUCH_ERROR_MARGIN) &&
-                        (initialTouchY <= ev.getRawY() + TOUCH_ERROR_MARGIN)) {
+                if (!moved && (isSignificantDifference(x, y) == false)) {
                     new DebugWindow(getApplicationContext(), debugMessages,
                         SharedElementService.this);
                 }
 
-                initialTouchX = lastTouchX = ev.getRawX();
-                initialTouchY = lastTouchY = ev.getRawY();
+                initialTouchX = lastTouchX = x;
+                initialTouchY = lastTouchY = y;
+                moved = false;
 
                 break;
             }

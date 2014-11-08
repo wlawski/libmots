@@ -46,7 +46,7 @@ runComponent = package + "/" + activity
 
 shortWaitTime = 0.5
 waitTime = 2.5
-longWaitTime = 6.0
+longWaitTime = 7.0
 
 sharedElemX = 405
 sharedElemY = 110
@@ -85,7 +85,8 @@ def createSharedElement(device, showing):
 
     # Tick checkbox, if necessary
     if (showing):
-	device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
+        device.touch(30, 110, MonkeyDevice.DOWN_AND_UP)
+        MonkeyRunner.sleep(waitTime)
 
     # Touch 'getInstance' button
     device.touch(270, 115, MonkeyDevice.DOWN_AND_UP)
@@ -95,12 +96,14 @@ def createSharedElement(device, showing):
 def getDevice():
     return MonkeyRunner.waitForConnection(10, defaultEmulator)
 
-# Moves shared element
-def moveSharedElement(device, x, y, deltaX, deltaY):
+# Moves shared element (moving "finger" away from the screen is optional)
+def moveSharedElement(device, x, y, deltaX, deltaY, moveFingerAway=True):
     device.touch(x, y, MonkeyDevice.DOWN)
     device.touch(x + deltaX, y + deltaY, MonkeyDevice.MOVE)
-    device.touch(x + deltaX, y + deltaY, MonkeyDevice.UP)
-    MonkeyRunner.sleep(waitTime)
+
+    if (moveFingerAway):
+        device.touch(x + deltaX, y + deltaY, MonkeyDevice.UP)
+        MonkeyRunner.sleep(waitTime)
 
 # Presses Back button
 def pressBack(device):

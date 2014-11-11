@@ -1,3 +1,6 @@
+libmots
+-------
+
 libmots library allows you to display additional debug information on
 the screen. It is very useful when you cannot keep active adb
 connection, e.g. while debugging application that changes USB states. libmots
@@ -8,10 +11,25 @@ clear already collected messages.
 You can find screenshots presenting use of 'Hello libmots' application
 inside this directory: tests/monkeyrunner-tests/reference-screenshots
 
+USAGE
+-----
+
 To start, you need to add libmots library to your project and add this
 line to your main project.properties file:
 
 	manifestmerger.enabled=true
+
+This is simplest part you need to add to your source code:
+
+	...
+	import net.wiktorlawski.messageonthescreen.MessageOnTheScreen;
+	...
+	MessageOnTheScreen mots =
+		MessageOnTheScreen.getInstance(activity, false);
+	mots.setText(activity, "Hello libmots!");
+
+SAMPLES & TESTS
+---------------
 
 Library comes with both sample application (samples/ directory) and tests
 (tests/ directory). monkeyrunner tests use emulator which you can prepare
@@ -23,3 +41,8 @@ running this command:
 
 To run monkeyrunner tests, just start run-tests.bat from
 tests/monkeyrunner-tests directory.
+
+LICENSE
+-------
+
+The MIT License (MIT)

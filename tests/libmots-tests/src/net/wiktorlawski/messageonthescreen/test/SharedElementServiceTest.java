@@ -54,6 +54,19 @@ public class SharedElementServiceTest
 	private static final int SHARED_ELEMENT_PADDING_X = 25;
 	private static final int SHARED_ELEMENT_PADDING_Y = 25;
 
+	/* x = (480 - BIN_WIDTH) / 2 */
+	/* y = 800 - BIN_HEIGHT */
+	private static final Position BIN_PORTRAIT_POSITION =
+			new Position(190, 700);
+	/* x = (800 - BIN_WIDTH) / 2 */
+	/* y = 480 - BIN_HEIGHT */
+	private static final Position BIN_LANDSCAPE_POSITION =
+			new Position(350, 380);
+	/* x = DEFAULT_LANDSCAPE_POSITION.x + (SHARED_ELEMENT_WIDTH / 2) */
+	/* y = DEFAULT_LANDSCAPE_POSITION.y + (SHARED_ELEMENT_HEIGHT / 2) */
+	private static final Position DEFAULT_LANDSCAPE_CENTER_POSITION =
+			new Position(725,
+					SHARED_ELEMENT_PADDING_Y + (SHARED_ELEMENT_HEIGHT / 2));
 	/* x = 800 - (SHARED_ELEMENT_WIDTH / 2) - SHARED_ELEMENT_PADDING_X */
 	/* y = SHARED_ELEMENT_PADDING_Y + (SHARED_ELEMENT_HEIGHT / 2) */
 	private static final Position DEFAULT_LANDSCAPE_POSITION =
@@ -80,17 +93,31 @@ public class SharedElementServiceTest
 	private static final Position DEFAULT_RESCALED_PORTRAIT_POSITION =
 			new Position(405, 41);
 
+	private static final String BIN_VIEW_FIELD_NAME = "binView";
+	private static final String CREATE_BIN_VIEW_METHOD = "createBinView";
 	private static final String DEBUG_MESSAGES_FIELD_NAME = "debugMessages";
+	private static final String GET_SCREEN_HEIGHT_METHOD_NAME =
+			"getScreenHeight";
+	private static final String GET_SCREEN_WIDTH_METHOD_NAME =
+			"getScreenWidth";
 	private static final String INITIAL_TOUCH_X_FIELD_NAME = "initialTouchX";
 	private static final String INITIAL_TOUCH_Y_FIELD_NAME = "initialTouchY";
+	private static final String IS_OVERLAPPING_BIN_METHOD_NAME =
+			"isOverlappingBin";
+	private static final String IS_PORTRAIT_METHOD_NAME = "isPortrait";
 	private static final String LAST_TOUCH_X_FIELD_NAME = "lastTouchX";
 	private static final String LAST_TOUCH_Y_FIELD_NAME = "lastTouchY";
+	private static final String LONG_PRESS_RUNNABLE_FIELD_NAME =
+			"longPressRunnable";
+	private static final String LONG_PRESSED_FIELD_NAME = "longPressed";
 	private static final String MOVED_FIELD_NAME = "moved";
 	private static final String ON_TOUCH_EVENT_METHOD_NAME = "onTouchEvent";
 	private static final String ORIENTATION_LISTENER_FIELD_NAME =
 			"orientationListener";
 	private static final String PREVIOUSLY_PORTRAIT_FIELD_NAME =
 			"previouslyPortrait";
+	private static final String READY_TO_REMOVE_FIELD_NAME =
+			"readyToRemove";
 	private static final String SHARED_ELEMENT_PARAMETERS_FIELD_NAME =
 			"sharedElementParameters";
 	private static final String SHARED_ELEMENT_VIEW_FIELD_NAME =
@@ -100,6 +127,9 @@ public class SharedElementServiceTest
 	private static final String WINDOW_MANAGER_FIELD_NAME = "windowManager";
 	private static final String CLEAR_DEBUG_MESSAGES_METHOD_NAME =
 			"clearDebugMessages";
+
+	public static final int BIN_HEIGHT = 100;
+	public static final int BIN_WIDTH = 100;
 
 	public static final int COMMAND_SET_TEXT = 1;
 	public static final int COMMAND_SHOW_SHARED_ELEMENT = 2;
@@ -115,6 +145,35 @@ public class SharedElementServiceTest
 		WindowManagerMock.getInstance()
 		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
 				WindowManagerMock.DEFAULT_DISPLAY_HEIGHT);
+	}
+
+	@Override
+	protected void tearDown() throws Exception {
+		WindowManagerMock.getInstance().clean();
+	}
+
+	private void createBinView() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field longPressRunnable =
+				sharedElementView.getClass()
+				.getDeclaredField(LONG_PRESS_RUNNABLE_FIELD_NAME);
+		longPressRunnable.setAccessible(true);
+		Object longPressRunnableObject = longPressRunnable.get(sharedElementView);
+		Method createBinViewMethod =
+				longPressRunnableObject.getClass()
+				.getDeclaredMethod(CREATE_BIN_VIEW_METHOD);
+		createBinViewMethod.setAccessible(true);
+		createBinViewMethod.invoke(longPressRunnableObject);
+	}
+
+	private ImageView getBinView() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field binViewField =
+				sharedElementView.getClass()
+				.getDeclaredField(BIN_VIEW_FIELD_NAME);
+		binViewField.setAccessible(true);
+
+		return (ImageView) binViewField.get(sharedElementView);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -187,6 +246,26 @@ public class SharedElementServiceTest
 		return previouslyPortraitField.getBoolean(orientationListener);
 	}
 
+	private int getScreenHeight() throws Exception {
+		SharedElementService service = getService();
+		Method getScreenHeightMethod =
+				service.getClass()
+				.getDeclaredMethod(GET_SCREEN_HEIGHT_METHOD_NAME);
+		getScreenHeightMethod.setAccessible(true);
+
+		return (Integer) getScreenHeightMethod.invoke(service);
+	}
+
+	private int getScreenWidth() throws Exception {
+		SharedElementService service = getService();
+		Method getScreenWidthMethod =
+				service.getClass()
+				.getDeclaredMethod(GET_SCREEN_WIDTH_METHOD_NAME);
+		getScreenWidthMethod.setAccessible(true);
+
+		return (Integer) getScreenWidthMethod.invoke(service);
+	}
+
 	private Object getSharedElementView() throws Exception {
 		SharedElementService service = getService();
 		Field sharedElementViewField =
@@ -206,6 +285,16 @@ public class SharedElementServiceTest
 		return (WindowManagerMock) WindowManagerMockField.get(service);
 	}
 
+	private boolean isLongPressed() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field longPressedField =
+				sharedElementView.getClass()
+				.getDeclaredField(LONG_PRESSED_FIELD_NAME);
+		longPressedField.setAccessible(true);
+
+		return longPressedField.getBoolean(sharedElementView);
+	}
+
 	private boolean isMoved() throws Exception {
 		Object sharedElementView = getSharedElementView();
 		Field movedField =
@@ -214,6 +303,36 @@ public class SharedElementServiceTest
 		movedField.setAccessible(true);
 
 		return movedField.getBoolean(sharedElementView);
+	}
+
+	private boolean isOverlappingBin() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Method isOverlappingBinMethod =
+				sharedElementView.getClass()
+				.getDeclaredMethod(IS_OVERLAPPING_BIN_METHOD_NAME);
+		isOverlappingBinMethod.setAccessible(true);
+
+		return (Boolean) isOverlappingBinMethod.invoke(sharedElementView);
+	}
+
+	private boolean isPortrait() throws Exception {
+		Object orientationListener = getOrientationListener();
+		Method isPortraitMethod =
+				orientationListener.getClass()
+				.getDeclaredMethod(IS_PORTRAIT_METHOD_NAME);
+		isPortraitMethod.setAccessible(true);
+
+		return (Boolean) isPortraitMethod.invoke(orientationListener);
+	}
+
+	private boolean isReadyToRemove() throws Exception {
+		Object sharedElementView = getSharedElementView();
+		Field readyToRemoveField =
+				sharedElementView.getClass()
+				.getDeclaredField(READY_TO_REMOVE_FIELD_NAME);
+		readyToRemoveField.setAccessible(true);
+
+		return (Boolean) readyToRemoveField.get(sharedElementView);
 	}
 
 	private boolean isShowing() throws Exception {
@@ -232,6 +351,13 @@ public class SharedElementServiceTest
 		visibleField.setAccessible(true);
 
 		return visibleField.getBoolean(service);
+	}
+
+	private void moveSharedElement(float destinationX, float destinationY)
+			throws Exception {
+		sendMotionEvent((BIN_WIDTH / 2) + destinationX,
+				(BIN_HEIGHT / 2) + destinationY,
+				MotionEvent.ACTION_MOVE);
 	}
 
 	private void sendAddMessage(String message) {
@@ -1406,6 +1532,392 @@ public class SharedElementServiceTest
 	}
 
 	/**
+	 * getScreenHeight() method should return correct value for portrait mode.
+	 */
+	public void test_getScreenHeight() throws Exception {
+		sendStartShowing(false);
+
+		assertEquals(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				getScreenHeight());
+	}
+
+	/**
+	 * getScreenHeight() method should return correct value for landscape mode.
+	 */
+	public void test_getScreenHeight2() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(false);
+
+		assertEquals(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
+				getScreenHeight());
+	}
+
+	/**
+	 * getScreenWidth() method should return correct value for portrait mode.
+	 */
+	public void test_getScreenWidth() throws Exception {
+		sendStartShowing(false);
+
+		assertEquals(WindowManagerMock.DEFAULT_DISPLAY_WIDTH,
+				getScreenWidth());
+	}
+
+	/**
+	 * getScreenWidth() method should return correct value for landscape mode.
+	 */
+	public void test_getScreenWidth2() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(false);
+
+		assertEquals(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				getScreenWidth());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element is not
+	 * overlapping bin at all.
+	 */
+	public void test_isOverlappingBin() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(DEFAULT_POSITION.x, DEFAULT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * on the left of bin area (without any common pixel with bin area).
+	 */
+	public void test_isOverlappingBin2() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x - SHARED_ELEMENT_WIDTH - 1,
+				BIN_PORTRAIT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when right edge of shared element
+	 * area is common with left edge of bin area.
+	 */
+	public void test_isOverlappingBin3() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x - SHARED_ELEMENT_WIDTH,
+				BIN_PORTRAIT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * at the top of bin area (without any common pixel with bin area).
+	 */
+	public void test_isOverlappingBin4() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x,
+				BIN_PORTRAIT_POSITION.y - SHARED_ELEMENT_HEIGHT - 1);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when bottom edge of shared element
+	 * area is common with top edge of bin area.
+	 */
+	public void test_isOverlappingBin5() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x,
+				BIN_PORTRAIT_POSITION.y - SHARED_ELEMENT_HEIGHT);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * on the right of bin area (without any common pixel with bin area).
+	 */
+	public void test_isOverlappingBin6() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x + BIN_WIDTH + 1,
+				BIN_PORTRAIT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when left edge of shared element
+	 * area is common with right edge of bin area.
+	 */
+	public void test_isOverlappingBin7() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x + BIN_WIDTH,
+				BIN_PORTRAIT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when bin area is at least partly
+	 * overlapped by shared element area.
+	 */
+	public void test_isOverlappingBin8() throws Exception {
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_PORTRAIT_POSITION.x + (BIN_WIDTH / 2),
+				BIN_PORTRAIT_POSITION.y + (BIN_HEIGHT / 2));
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element is not
+	 * overlapping bin at all in landscape mode.
+	 */
+	public void test_isOverlappingBin9() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(DEFAULT_POSITION.x, DEFAULT_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * on the left of bin area (without any common pixel with bin area) in
+	 * landscape mode.
+	 */
+	public void test_isOverlappingBin10() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x - SHARED_ELEMENT_WIDTH - 1,
+				BIN_LANDSCAPE_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when right edge of shared element
+	 * area is common with left edge of bin area in landscape mode.
+	 */
+	public void test_isOverlappingBin11() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x - SHARED_ELEMENT_WIDTH,
+				BIN_LANDSCAPE_POSITION.y);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * at the top of bin area (without any common pixel with bin area) in
+	 * landscape mode.
+	 */
+	public void test_isOverlappingBin12() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x,
+				BIN_LANDSCAPE_POSITION.y - SHARED_ELEMENT_HEIGHT - 1);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when bottom edge of shared element
+	 * area is common with top edge of bin area in landscape mode.
+	 */
+	public void test_isOverlappingBin13() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x,
+				BIN_LANDSCAPE_POSITION.y - SHARED_ELEMENT_HEIGHT);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return false when shared element area is just
+	 * on the right of bin area (without any common pixel with bin area) in
+	 * landscape mode.
+	 */
+	public void test_isOverlappingBin14() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x + BIN_WIDTH + 1,
+				BIN_LANDSCAPE_POSITION.y);
+
+		createBinView();
+
+		assertEquals(false, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when left edge of shared element
+	 * area is common with right edge of bin area in landscape mode.
+	 */
+	public void test_isOverlappingBin15() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x + BIN_WIDTH,
+				BIN_LANDSCAPE_POSITION.y);
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * isOverlappingBin() should return true when bin area is at least partly
+	 * overlapped by shared element area in landscape mode.
+	 */
+	public void test_isOverlappingBin16() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(true);
+
+		sendMotionEvent(DEFAULT_LANDSCAPE_CENTER_POSITION.x,
+				DEFAULT_LANDSCAPE_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
+		moveSharedElement(BIN_LANDSCAPE_POSITION.x + (BIN_WIDTH / 2),
+				BIN_LANDSCAPE_POSITION.y + (BIN_HEIGHT / 2));
+
+		createBinView();
+
+		assertEquals(true, isOverlappingBin());
+	}
+
+	/**
+	 * Width < height means that screen is in portrait mode.
+	 */
+	public void test_isPortrait() throws Exception {
+		sendStartShowing(false);
+
+		assertEquals(true, isPortrait());
+	}
+
+	/**
+	 * Width > height means that screen is in landscape mode.
+	 */
+	public void test_isPortrait2() throws Exception {
+		WindowManagerMock windowManagerMock = WindowManagerMock.getInstance();
+		windowManagerMock
+		.setNewDisplay(WindowManagerMock.DEFAULT_DISPLAY_HEIGHT,
+				WindowManagerMock.DEFAULT_DISPLAY_WIDTH);
+
+		sendStartShowing(false);
+
+		assertEquals(false, isPortrait());
+	}
+
+	/**
 	 * OrientationEventListener should know screen orientation when created
 	 * (default orientation is portrait).
 	 */
@@ -1522,6 +2034,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1543,6 +2058,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1564,6 +2082,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1585,6 +2106,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1593,6 +2117,8 @@ public class SharedElementServiceTest
 	 */
 	public void test_onTouchEvent5() throws Exception {
 		sendStartShowing(true);
+		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
+				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
 		sendMotionEvent(DEFAULT_PORTRAIT_CENTER_POSITION.x,
 				DEFAULT_PORTRAIT_CENTER_POSITION.y, MotionEvent.ACTION_DOWN);
 
@@ -1606,6 +2132,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1635,6 +2164,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1666,6 +2198,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
 				getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1699,6 +2234,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y + deltaY,
 				getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1728,6 +2266,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.x, getLastTouchX());
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1757,6 +2298,9 @@ public class SharedElementServiceTest
 		assertEquals(newTouchPosition.x, getLastTouchX());
 		assertEquals(newTouchPosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1797,6 +2341,9 @@ public class SharedElementServiceTest
 		assertEquals(DEFAULT_PORTRAIT_CENTER_POSITION.y - deltaY2,
 				getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1833,6 +2380,9 @@ public class SharedElementServiceTest
 		assertEquals(newTouchPosition.x, getLastTouchX());
 		assertEquals(newTouchPosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1862,6 +2412,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1891,6 +2444,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1920,6 +2476,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1949,6 +2508,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(false, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -1978,6 +2540,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(true, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -2007,6 +2572,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(true, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -2036,6 +2604,9 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(true, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 
 	/**
@@ -2065,5 +2636,8 @@ public class SharedElementServiceTest
 		assertEquals(newMovePosition.x, getLastTouchX());
 		assertEquals(newMovePosition.y, getLastTouchY());
 		assertEquals(true, isMoved());
+		assertEquals(false, isLongPressed());
+		assertNull(getBinView());
+		assertEquals(false, isReadyToRemove());
 	}
 }

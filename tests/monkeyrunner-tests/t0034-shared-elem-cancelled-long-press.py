@@ -23,8 +23,8 @@
 #
 
 #
-# This test checks that even small move and returning to initial position,
-# during one contact between finger and screen, will not trigger debug window.
+# This test checks that long press behavior will be cancelled when moving
+# finger away from the screen.
 #
 
 import inspect
@@ -45,12 +45,9 @@ x = helpers.sharedElemX
 y = helpers.sharedElemY
 
 helpers.createSharedElement(device, True)
-helpers.pressHome(device)
-device.touch(x, y, MonkeyDevice.DOWN)
-helpers.moveSharedElement(device, x, y, 0, 50, False)
-helpers.moveSharedElement(device, x, y + 50, 0, -50, False)
-device.touch(x, y, MonkeyDevice.UP)
-MonkeyRunner.sleep(helpers.shortWaitTime)
+helpers.setPortrait(device)
+helpers.longPress(device, x, y)
+helpers.moveFingerAway(device, x, y)
 
 result = device.takeSnapshot().getSubImage(helpers.portraitRect)
 helpers.checkResult(result, currentDir, calledScript)

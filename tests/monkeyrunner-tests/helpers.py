@@ -35,7 +35,7 @@ from java.lang import NullPointerException
 actualDir = "actual-screenshots"
 defaultEmulator = "emulator-5554"
 landscapeRect = (0, 0, 440, 800)
-numberOfTabs = 5
+numberOfTabs = 7
 portraitRect = (0, 35, 480, 765)
 referenceDir = "reference-screenshots"
 tabSize = 8
@@ -48,6 +48,10 @@ shortWaitTime = 0.5
 waitTime = 2.5
 longWaitTime = 7.0
 
+binLscapeX = 400
+binLscapeY = 430
+binX = 240
+binY = 750
 sharedElemX = 405
 sharedElemY = 110
 
@@ -96,14 +100,28 @@ def createSharedElement(device, showing):
 def getDevice():
     return MonkeyRunner.waitForConnection(10, defaultEmulator)
 
-# Moves shared element (moving "finger" away from the screen is optional)
-def moveSharedElement(device, x, y, deltaX, deltaY, moveFingerAway=True):
+# Presses specified point for enough period of time to trigger long press
+# behavior
+def longPress(device, x, y):
     device.touch(x, y, MonkeyDevice.DOWN)
+    waitForLongPress()
+
+# Moves "finger" away from the screen
+def moveFingerAway(device, x, y):
+    device.touch(x, y, MonkeyDevice.UP)
+    MonkeyRunner.sleep(waitTime)
+
+# Moves shared element (moving "finger" away from the screen is optional)
+def moveSharedElement(device, x, y, deltaX, deltaY, toMoveFingerAway=True):
+    if (toMoveFingerAway):
+        device.touch(x, y, MonkeyDevice.DOWN)
+
     device.touch(x + deltaX, y + deltaY, MonkeyDevice.MOVE)
 
-    if (moveFingerAway):
-        device.touch(x + deltaX, y + deltaY, MonkeyDevice.UP)
-        MonkeyRunner.sleep(waitTime)
+    if (toMoveFingerAway):
+        moveFingerAway(device, x + deltaX, y + deltaY)
+
+    MonkeyRunner.sleep(shortWaitTime)
 
 # Presses Back button
 def pressBack(device):
@@ -174,3 +192,7 @@ def touchSetText(device):
 def touchSharedElement(device):
     device.touch(sharedElemX, sharedElemY, MonkeyDevice.DOWN_AND_UP)
     MonkeyRunner.sleep(longWaitTime)
+
+# Waits for enough period of time to trigger long press behavior
+def waitForLongPress():
+    MonkeyRunner.sleep(waitTime)

@@ -23,8 +23,8 @@
 #
 
 #
-# This test checks that even small move and returning to initial position,
-# during one contact between finger and screen, will not trigger debug window.
+# This test checks that after releasing touch from shared element in landscape
+# mode while on bin, both shared element and bin are removed.
 #
 
 import inspect
@@ -43,14 +43,15 @@ device = helpers.getDevice()
 
 x = helpers.sharedElemX
 y = helpers.sharedElemY
+xB = helpers.binLscapeX
+yB = helpers.binLscapeY
 
 helpers.createSharedElement(device, True)
-helpers.pressHome(device)
-device.touch(x, y, MonkeyDevice.DOWN)
-helpers.moveSharedElement(device, x, y, 0, 50, False)
-helpers.moveSharedElement(device, x, y + 50, 0, -50, False)
-device.touch(x, y, MonkeyDevice.UP)
+helpers.setLandscape(device)
+helpers.longPress(device, x, y)
+helpers.moveSharedElement(device, x, y, xB - x, yB - y, False)
+device.touch(xB - x, yB - y, MonkeyDevice.UP)
 MonkeyRunner.sleep(helpers.shortWaitTime)
 
-result = device.takeSnapshot().getSubImage(helpers.portraitRect)
+result = device.takeSnapshot().getSubImage(helpers.landscapeRect)
 helpers.checkResult(result, currentDir, calledScript)

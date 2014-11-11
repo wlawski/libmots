@@ -47,6 +47,11 @@ public class SharedElementServiceMockResources extends MockResources {
     }
 
     @Override
+    public int getIdentifier(String name, String defType, String defPackage) {
+        return 0;
+    }
+
+    @Override
     public int getInteger(int id) {
         return 0;
     }

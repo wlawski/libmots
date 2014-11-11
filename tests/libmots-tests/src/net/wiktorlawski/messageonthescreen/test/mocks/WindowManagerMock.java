@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import net.wiktorlawski.messageonthescreen.test.Position;
+import net.wiktorlawski.messageonthescreen.test.SharedElementServiceTest;
 
 import android.view.Display;
 import android.view.View;
@@ -37,9 +38,13 @@ import android.view.WindowManager;
 public class WindowManagerMock implements WindowManager {
     public static final int DEFAULT_DISPLAY_HEIGHT = 800;
     public static final int DEFAULT_DISPLAY_WIDTH = 480;
+    public static final int DEFAULT_NAVIGATION_BAR_HEIGHT_LANDSCAPE = 0;
+    public static final int DEFAULT_NAVIGATION_BAR_HEIGHT_PORTRAIT = 0;
 
     private static WindowManagerMock instance;
 
+    private View binView;
+    private Position binViewPosition;
     private Display displayInstance;
     private View sharedElementView;
     private Position viewPosition;
@@ -82,17 +87,36 @@ public class WindowManagerMock implements WindowManager {
         return instance;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void addView(View view, android.view.ViewGroup.LayoutParams params) {
-        if (sharedElementView == null) {
-            sharedElementView = view;
-            android.view.WindowManager.LayoutParams layoutParams =
-                    (android.view.WindowManager.LayoutParams) params;
-            viewPosition = new Position(layoutParams.x, layoutParams.y);
-        } else {
-            /* Force NullPointerException - this view is already added! */
-            sharedElementView = null;
-            sharedElementView.equals(view);
+        if (view.getClass().getName().equals(
+                "net.wiktorlawski.messageonthescreen" +
+                ".SharedElementService$SharedElementView")) {
+            if (sharedElementView == null) {
+                sharedElementView = view;
+                android.view.WindowManager.LayoutParams layoutParams =
+                        (android.view.WindowManager.LayoutParams) params;
+                viewPosition = new Position(layoutParams.x, layoutParams.y);
+            } else {
+                /* Force NullPointerException - this view is already added! */
+                sharedElementView = null;
+                sharedElementView.equals(view);
+            }
+        } else if (view.getClass().getName()
+                .equals("android.widget.ImageView")) {
+            if (binView == null) {
+                binView = view;
+                binViewPosition =
+                        new Position((getDefaultDisplay().getWidth() -
+                                SharedElementServiceTest.BIN_WIDTH) / 2,
+                                getDefaultDisplay().getHeight() -
+                                SharedElementServiceTest.BIN_HEIGHT);
+            } else {
+                /* Force NullPointerException - this view is already added! */
+                binView = null;
+                binView.equals(view);
+            }
         }
     }
 
@@ -101,6 +125,9 @@ public class WindowManagerMock implements WindowManager {
         if (sharedElementView.equals(view)) {
             sharedElementView = null;
             viewPosition = null;
+        } else if (binView.equals(view)) {
+            binView = null;
+            binViewPosition = null;
         }
     }
 
@@ -112,6 +139,21 @@ public class WindowManagerMock implements WindowManager {
                     (android.view.WindowManager.LayoutParams) params;
             viewPosition = new Position(layoutParams.x, layoutParams.y);
         }
+    }
+
+    public void clean() {
+        binView = null;
+        binViewPosition = null;
+        sharedElementView = null;
+        viewPosition = null;
+    }
+
+    public Position getBinViewLocation() {
+        if (binView == null) {
+            return new Position(-1, -1); /* Incorrect screen position */
+        }
+
+        return binViewPosition;
     }
 
     @Override

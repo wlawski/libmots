@@ -31,11 +31,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
-import android.view.Display;
+import android.os.Vibrator;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
+import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
@@ -73,7 +75,6 @@ public class SharedElementService extends Service {
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -87,8 +88,8 @@ public class SharedElementService extends Service {
                 LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSPARENT);
         sharedElementParameters.gravity = Gravity.LEFT | Gravity.TOP;
         sharedElementParameters.x =
-                windowManager.getDefaultDisplay().getWidth() -
-                SHARED_ELEMENT_WIDTH - SHARED_ELEMENT_PADDING_X;
+                getScreenWidth() - SHARED_ELEMENT_WIDTH -
+                SHARED_ELEMENT_PADDING_X;
         sharedElementParameters.y = SHARED_ELEMENT_PADDING_Y;
 
         orientationListener = new OrientationListener();
@@ -174,6 +175,16 @@ public class SharedElementService extends Service {
     	}
     }
 
+    @SuppressWarnings("deprecation")
+    private int getScreenHeight() {
+        return windowManager.getDefaultDisplay().getHeight();
+    }
+
+    @SuppressWarnings("deprecation")
+    private int getScreenWidth() {
+        return windowManager.getDefaultDisplay().getWidth();
+    }
+
     private void hideSharedElement(boolean newShowing) {
     	showing = newShowing;
 
@@ -207,13 +218,11 @@ public class SharedElementService extends Service {
             previouslyPortrait = isPortrait();
         }
 
-        @SuppressWarnings("deprecation")
         private void adaptToOrientationChange() {
-            Display display = windowManager.getDefaultDisplay();
-            float previousWidth = display.getHeight();
-            float previousHeight = display.getWidth();
-            float width = display.getWidth();
-            float height = display.getHeight();
+            float previousWidth = getScreenHeight();
+            float previousHeight = getScreenWidth();
+            float width = getScreenWidth();
+            float height = getScreenHeight();
             float scaleWidth = width / previousWidth;
             float scaleHeight = height / previousHeight;
 
@@ -223,10 +232,8 @@ public class SharedElementService extends Service {
                     sharedElementParameters);
         }
 
-        @SuppressWarnings("deprecation")
-        private boolean isPortrait() {
-            if (windowManager.getDefaultDisplay().getWidth() <
-                    windowManager.getDefaultDisplay().getHeight()) {
+        /* package */ boolean isPortrait() {
+            if (getScreenWidth() < getScreenHeight()) {
                 return true;
             }
 
@@ -254,16 +261,80 @@ public class SharedElementService extends Service {
     }
 
     private class SharedElementView extends ImageView {
+        private static final int BIN_HEIGHT = 100;
+        private static final int BIN_WIDTH = 100;
         private static final float TOUCH_ERROR_MARGIN = 7.5f;
 
+        private ImageView binView;
         private float initialTouchX;
         private float initialTouchY;
         private float lastTouchX = -1;
         private float lastTouchY = -1;
+        private boolean longPressed;
+        private Handler longPressHandler = new Handler();
+        private Runnable longPressRunnable = new LongPressRunnable();
         private boolean moved;
+        private boolean readyToRemove;
 
         public SharedElementView(Context context) {
             super(context);
+        }
+
+        private void cancelLongPressBehavior() {
+            longPressed = false;
+            sharedElement.setImageResource(R.drawable.icon);
+            longPressHandler.removeCallbacks(longPressRunnable);
+
+            if (binView != null) {
+                windowManager.removeView(binView);
+                binView = null;
+            }
+        }
+
+        private boolean isOverlappingBin() {
+            final int showNavigationBarId = getResources()
+                    .getIdentifier("config_showNavigationBar", "bool",
+                        "android");
+
+            final boolean hasNavigationBar = (showNavigationBarId > 0) ?
+                    getResources().getBoolean(showNavigationBarId)
+                    : false;
+
+            final int navigationBarHeightPortrait =
+                    hasNavigationBar ?
+                        getResources().getDimensionPixelSize(
+                                getResources()
+                                .getIdentifier(
+                                        "navigation_bar_height",
+                                        "dimen", "android"))
+                        : 0;
+
+            final int navigationBarHeight =
+                    orientationListener.isPortrait() ?
+                        navigationBarHeightPortrait
+                        /*
+                         * Navigation bar located on the left or right in
+                         * landscape mode
+                         */
+                        : 0;
+
+            final int binX0 = (getScreenWidth() - BIN_WIDTH) / 2;
+            final int binX1 = (getScreenWidth() + BIN_WIDTH) / 2;
+            final int binY0 =
+                    getScreenHeight() - BIN_HEIGHT - navigationBarHeight;
+
+            if ((((sharedElementParameters.x >= binX0) &&
+                    (sharedElementParameters.x <= binX1)) ||
+                    ((sharedElementParameters.x + SHARED_ELEMENT_WIDTH >=
+                            binX0) &&
+                    (sharedElementParameters.x + SHARED_ELEMENT_WIDTH <=
+                            binX1))) &&
+                    (sharedElementParameters.y + SHARED_ELEMENT_HEIGHT >=
+                            binY0)) {
+                return true;
+            }
+
+            return false;
         }
 
         private boolean isSignificantDifference(float rawX, float rawY) {
@@ -283,10 +354,21 @@ public class SharedElementService extends Service {
             final float y = ev.getRawY();
 
             switch (ev.getAction()) {
+            case MotionEvent.ACTION_CANCEL:
+                cancelLongPressBehavior();
+                readyToRemove = false;
+
+                break;
+
             case MotionEvent.ACTION_DOWN:
                 initialTouchX = lastTouchX = ev.getRawX();
                 initialTouchY = lastTouchY = ev.getRawY();
                 moved = false;
+
+                cancelLongPressBehavior();
+                readyToRemove = false;
+                longPressHandler.postDelayed(longPressRunnable,
+                        ViewConfiguration.getLongPressTimeout());
 
                 break;
 
@@ -303,6 +385,24 @@ public class SharedElementService extends Service {
 
                     if (isSignificantDifference(x, y)) {
                     	moved = true;
+
+                        if (!longPressed) {
+                            cancelLongPressBehavior();
+                        }
+                    }
+
+                    if (longPressed) {
+                        if (this.isOverlappingBin()) {
+                            if (!readyToRemove) {
+                                sharedElement
+                                .setImageResource(R.drawable.icon_stroke_red);
+                                readyToRemove = true;
+                            }
+                        } else if (readyToRemove) {
+                            sharedElement
+                            .setImageResource(R.drawable.icon_stroke);
+                            readyToRemove = false;
+                        }
                     }
                 }
 
@@ -312,7 +412,8 @@ public class SharedElementService extends Service {
                 break;
 
             case MotionEvent.ACTION_UP:
-                if (!moved && (isSignificantDifference(x, y) == false)) {
+                if (!moved && (isSignificantDifference(x, y) == false) &&
+                        !longPressed) {
                     new DebugWindow(getApplicationContext(), debugMessages,
                         SharedElementService.this);
                 }
@@ -321,10 +422,44 @@ public class SharedElementService extends Service {
                 initialTouchY = lastTouchY = y;
                 moved = false;
 
+                cancelLongPressBehavior();
+
+                if (readyToRemove) {
+                    SharedElementService.this.stopSelf();
+                }
+
                 break;
             }
 
             return true;
+        }
+
+        private class LongPressRunnable implements Runnable {
+            private static final long VIBRATE_DURATION_MS = 50;
+
+            @Override
+            public void run() {
+                longPressed = true;
+                sharedElement.setImageResource(R.drawable.icon_stroke);
+
+                Vibrator vibrator =
+                        (Vibrator) getSystemService(VIBRATOR_SERVICE);
+                vibrator.vibrate(VIBRATE_DURATION_MS);
+
+                createBinView();
+            }
+
+            private void createBinView() {
+                binView = new ImageView(SharedElementService.this);
+                binView.setImageResource(R.drawable.bin);
+                LayoutParams binViewParameters = new LayoutParams(BIN_WIDTH,
+                        BIN_HEIGHT, LayoutParams.TYPE_PHONE,
+                        LayoutParams.FLAG_NOT_FOCUSABLE,
+                        PixelFormat.TRANSPARENT);
+                binViewParameters.gravity = Gravity.CENTER | Gravity.BOTTOM;
+
+                windowManager.addView(binView, binViewParameters);
+            }
         }
     }
 }

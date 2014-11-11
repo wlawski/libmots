@@ -1,3 +1,7 @@
+ver 1.0
+	Made 'shared element' movable and removable from UI.
+	Added option to clear debug window.
+
 ver 0.3
 	Added interface to add new debug messages to debug window.
 
